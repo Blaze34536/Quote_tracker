@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFQ Entry - Professional</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --primary-blue: #1a73e8;
+            --success-green: #28a745;
+            --danger-red: #dc3545;
+            --label-color: #5f6368;
+        }
+
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; font-size: 13px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: #444; }
+        .nav-links { display: flex; gap: 15px; align-items: center; }
+        .nav-links a { color: var(--primary-blue); text-decoration: none; font-weight: 500; }
+        .user-name { color: #333; font-weight: 500; }
+
+        .card { background: var(--card-bg); border-radius: 4px; border: 1px solid var(--border-color); padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-title { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+
+        .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .col { display: flex; flex-direction: column; flex: 1; min-width: 80px; }
+        
+        label { color: var(--label-color); margin-bottom: 4px; font-size: 11px; font-weight: 600; }
+        input, select { border: 1px solid var(--border-color); padding: 6px 8px; border-radius: 3px; outline: none; font-size: 12px; width: 100%; box-sizing: border-box; }
+        input:focus { border-color: var(--primary-blue); }
+
+        /* Grid Layouts - No ID Column */
+        .parts-row { display: grid; grid-template-columns: repeat(8, 1fr) 35px; gap: 8px; align-items: end; margin-bottom: 8px; }
+        .pricing-row { display: grid; grid-template-columns: repeat(11, 1fr) 2fr; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
+        
+        .btn-add { background-color: var(--success-green); color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-save { background-color: var(--primary-blue); color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold; float: right; }
+        .btn-remove { background-color: var(--danger-red); color: white; border: none; border-radius: 4px; cursor: pointer; height: 28px; width: 30px; font-weight: bold; }
+
+        .status-footer { margin-top: 30px; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div><strong>RFQ Entry</div>
+        <div class="nav-links">
+            <span class="user-name"></span>
+            <a href="/RfqList">RFQ List</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="col" style="max-width: 200px;">
+            <label>Date</label>
+            <input type="date" value="2025-12-25">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Sales & Customer</div>
+        <div class="row">
+            <div class="col"><label>RFQ No</label><input type="text"></div>
+            <div class="col"><label>Company Name</label><input type="text"></div>
+            <div class="col">
+                <label>Sales Person</label>
+                <select>
+                  <option>Select</option>
+                  <option>1</option>
+                  <option>2</option>
+                </select>
+            </div>
+            <div class="col"><label>Customer Name</label><input type="text"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Part Details</div>
+        <div id="partsContainer">
+            <div class="parts-row" style="margin-bottom: 5px;">
+                <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
+                <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
+                <label>Make</label><label>Lead</label>
+                <div></div>
+            </div>
+            
+            <div class="parts-row" id="part-row-1">
+                <input type="text"><input type="text"><input type="text">
+                <input type="text"><input type="number"><input type="number">
+                <input type="text"><input type="text">
+                <button type="button" class="btn-remove" onclick="removeLinkedRow(1)">×</button>
+            </div>
+        </div>
+        <button type="button" class="btn-add" onclick="addLinkedRow()">+ Add Part</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Pricing (Per Part)</div>
+        <div id="pricingContainer">
+            <div class="pricing-row" style="margin-bottom: 5px;">
+                <label>Unit $</label><label>Exch</label><label>Unit ₹</label>
+                <label>Freight</label><label>Insur.</label><label>BCD</label>
+                <label>Bank</label><label>Clear.</label><label>Margin</label>
+                <label>Resale</label><label>TP</label><label>Remarks</label>
+            </div>
+
+            <div class="pricing-row" id="price-row-1">
+                <input type="number" step="0.0001" oninput="calculateINR(1)" id="usd-1">
+                <input type="number" oninput="calculateINR(1)" id="exch-1">
+                <input type="number" readonly id="inr-1" style="background:#f8f9fa;">
+                <input type="text"><input type="text"><input type="text">
+                <input type="text"><input type="text"><input type="text">
+                <input type="text"><input type="text"><input type="text">
+            </div>
+        </div>
+    </div>
+
+    <div class="status-footer">
+        <button class="btn-save">Save RFQ</button>
+    </div>
+
+    <script>
+        let rowCount = 1;
+
+        function calculateINR(id) {
+            const usd = document.getElementById(`usd-${id}`).value;
+            const exch = document.getElementById(`exch-${id}`).value;
+            const inrField = document.getElementById(`inr-${id}`);
+            if (usd && exch) {
+                inrField.value = (parseFloat(usd) * parseFloat(exch)).toFixed(2);
+            } else {
+                inrField.value = "";
+            }
+        }
+
+        function addLinkedRow() {
+            rowCount++;
+            
+            const pContainer = document.getElementById('partsContainer');
+            const pRow = document.createElement('div');
+            pRow.className = 'parts-row';
+            pRow.id = `part-row-${rowCount}`;
+            pRow.innerHTML = `
+                <input type="text"><input type="text"><input type="text">
+                <input type="text"><input type="number"><input type="number">
+                <input type="text"><input type="text">
+                <button type="button" class="btn-remove" onclick="removeLinkedRow(${rowCount})">×</button>
+            `;
+            pContainer.appendChild(pRow);
+
+            const prContainer = document.getElementById('pricingContainer');
+            const prRow = document.createElement('div');
+            prRow.className = 'pricing-row';
+            prRow.id = `price-row-${rowCount}`;
+            prRow.innerHTML = `
+                <input type="number" step="0.0001" id="usd-${rowCount}" oninput="calculateINR(${rowCount})">
+                <input type="number" id="exch-${rowCount}" oninput="calculateINR(${rowCount})">
+                <input type="number" readonly id="inr-${rowCount}" style="background:#f8f9fa;">
+                <input type="text"><input type="text"><input type="text">
+                <input type="text"><input type="text"><input type="text">
+                <input type="text"><input type="text"><input type="text">
+            `;
+            prContainer.appendChild(prRow);
+        }
+
+        function removeLinkedRow(id) {
+            document.getElementById(`part-row-${id}`).remove();
+            document.getElementById(`price-row-${id}`).remove();
+        }
+    </script>
+
+</body>
+</html>
