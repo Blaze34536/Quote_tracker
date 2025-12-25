@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 20px 48px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2563eb, #3b82f6, #1d4ed8);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .login-header h2 {
+            color: #1e293b;
+            font-size: 1.875rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-wrapper input {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            color: #1e293b;
+            font-size: 16px;
+            outline: none;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input:focus {
+            background: #ffffff;
+            border-color: #2563eb;
+        }
+
+        .input-wrapper label {
+            position: absolute;
+            left: 16px;
+            top: 16px;
+            color: #64748b;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        /* Float label logic */
+        .input-wrapper input:focus + label,
+        .input-wrapper input:not(:placeholder-shown) + label {
+            transform: translateY(-36px) translateX(4px) scale(0.85);
+            color: #2563eb;
+            font-weight: 600;
+            background: #ffffff;
+            padding: 0 8px;
+        }
+
+        /* Buttons */
+        .login-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .signup-btn {
+            display: block;         
+            width: 100%;
+            text-align: center;      
+            text-decoration: none;
+
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            color: #475569;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .signup-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        /* Error States */
+        .error-message {
+            color: #dc2626;
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+            border-left: 3px solid #dc2626;
+            padding-left: 8px;
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .form-group.error input {
+            border-color: #dc2626;
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success-icon {
+            width: 50px;
+            height: 50px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 24px;
+        }
+
+        /* Loading Spinner */
+        .btn-loader {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid white;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .loading .btn-text { display: none; }
+        .loading .btn-loader { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div id="formSection">
+                <div class="login-header">
+                    <h2>Welcome Back</h2>
+                    <p>Please sign in to your account</p>
+                </div>
+                
+                <form id="loginForm" novalidate>
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input type="email" id="email" placeholder=" " required>
+                            <label for="email">Email Address</label>
+                        </div>
+                        <span class="error-message" id="emailError"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input type="password" id="password" placeholder=" " required>
+                            <label for="password">Password</label>
+                            <button type="button" class="password-toggle" id="passwordToggle">👁️</button>
+                        </div>
+                        <span class="error-message" id="passwordError"></span>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <span class="btn-text">Sign In</span>
+                        <div class="btn-loader"></div>
+                    </button>
+                </form>
+
+                <div style="text-align: center; margin: 15px 0; color: #94a3b8; font-size: 13px;">OR</div>
+                <a href="/signup" class="signup-btn">Create New Account</a>
+
+            </div>
+
+            <div class="success-message" id="successMessage">
+                <div class="success-icon">✓</div>
+                <h3>Authentication Successful</h3>
+                <p>Redirecting to your workspace...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const passwordToggle = document.getElementById('passwordToggle');
+        const successMessage = document.getElementById('successMessage');
+        const formSection = document.getElementById('formSection');
+        const loginBtn = loginForm.querySelector('.login-btn');
+
+        // Toggle Password Visibility
+        passwordToggle.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            passwordToggle.textContent = isPassword ? '🔒' : '👁️';
+        });
+
+        // Email Validator (Universal format: x@y.z)
+        const isValidEmail = (email) => {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        };
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let hasError = false;
+
+            // Email Validation
+            if (!isValidEmail(emailInput.value)) {
+                emailError.textContent = "Please enter a valid email address";
+                emailError.style.display = "block";
+                emailInput.parentElement.parentElement.classList.add('error');
+                hasError = true;
+            } else {
+                emailError.style.display = "none";
+                emailInput.parentElement.parentElement.classList.remove('error');
+            }
+
+            // Password Validation
+            if (passwordInput.value.length < 1) {
+                passwordError.textContent = "Password is required";
+                passwordError.style.display = "block";
+                passwordInput.parentElement.parentElement.classList.add('error');
+                hasError = true;
+            } else {
+                passwordError.style.display = "none";
+                passwordInput.parentElement.parentElement.classList.remove('error');
+            }
+
+            if (!hasError) {
+                // Show Loading Animation
+                loginBtn.classList.add('loading');
+                loginBtn.disabled = true;
+
+                setTimeout(() => {
+                    formSection.style.display = 'none';
+                    successMessage.style.display = 'block';
+                }, 1500);
+            }
+        });
+
+        // Clear errors as user types
+        emailInput.addEventListener('input', () => {
+            emailError.style.display = "none";
+            emailInput.parentElement.parentElement.classList.remove('error');
+        });
+        passwordInput.addEventListener('input', () => {
+            passwordError.style.display = "none";
+            passwordInput.parentElement.parentElement.classList.remove('error');
+        });
+    </script>
+</body>
+</html>

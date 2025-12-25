@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFQ Entry - Professional Hybrid</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --primary-blue: #2563eb;
+            --success-green: #16a34a;
+            --danger-red: #dc2626;
+            --label-color: #475569;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; font-size: 13px; color: #1e293b; }
+        
+        /* Navigation Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .nav-links { display: flex; gap: 10px; align-items: center; }
+        .nav-links a { color: var(--primary-blue); text-decoration: none; font-weight: 600; border: 1px solid #e2e8f0; padding: 6px 14px; border-radius: 6px; background: white; }
+        .user-name { font-weight: 600; color: #64748b; margin-right: 10px; }
+
+        /* Card Container */
+        .card { background: var(--card-bg); border-radius: 8px; border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-title { font-weight: 700; color: #334155; margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+        
+        /* Item Title Styling */
+        .item-title { font-size: 13px; font-weight: 800; color: var(--primary-blue); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-left: 4px solid var(--primary-blue); padding-left: 10px; text-transform: uppercase; }
+
+        /* Form Layout */
+        .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .col { display: flex; flex-direction: column; flex: 1; min-width: 80px; }
+        
+        label { color: var(--label-color); margin-bottom: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        input, select { border: 1px solid var(--border-color); padding: 8px 10px; border-radius: 5px; outline: none; font-size: 12px; width: 100%; box-sizing: border-box; }
+        input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+
+        /* Grid Layouts for Parts and Pricing */
+        .parts-grid { display: grid; grid-template-columns: repeat(8, 1fr) 40px; gap: 10px; align-items: end; margin-bottom: 10px; }
+        .pricing-grid { display: grid; grid-template-columns: repeat(11, 1fr) 2fr; gap: 10px; align-items: end; padding-bottom: 25px; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; }
+        
+        /* Prevent border on the very last item */
+        .item-block:last-child .pricing-grid { border-bottom: none; margin-bottom: 10px; }
+
+        /* Buttons */
+        .btn-add { background-color: var(--success-green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 700; transition: opacity 0.2s; }
+        .btn-save { background-color: var(--primary-blue); color: white; border: none; padding: 12px 35px; border-radius: 6px; cursor: pointer; font-weight: 700; float: right; }
+        .btn-remove { background-color: #fef2f2; color: var(--danger-red); border: 1px solid #fee2e2; border-radius: 5px; cursor: pointer; height: 32px; font-weight: bold; }
+        .btn-add:hover, .btn-save:hover { opacity: 0.9; }
+
+        .footer { margin-top: 20px; padding-top: 20px; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div><strong>RFQ Entry</strong> </div>
+        <div class="nav-links">
+            <span class="user-name"></span>
+            <a href="#">RFQ List</a>
+            <a href="#">Logout</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="row">
+            <div class="col" style="max-width: 180px;"><label>Date</label><input type="date"></div>
+            <div class="col" style="max-width: 150px;"><label>RFQ No</label><input type="text"></div>
+            <div class="col"><label>Company Name</label><input type="text"></div>
+            <div class="col"><label>Sales Person</label>
+                <select>
+                    <option>Select</option>
+                    <option>User 1</option>
+                    <option>User 2</option>
+                </select></div>
+            <div class="col"><label>Customer Name</label><input type="text"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Part & Pricing Details</div>
+        
+        <div id="masterContainer">
+            </div>
+
+        <button type="button" class="btn-add" onclick="addBlock()">+ Add New Item</button>
+    </div>
+
+    <div class="footer">
+        <button class="btn-save">Save RFQ</button>
+    </div>
+
+    <script>
+        window.onload = function() {
+            addBlock();
+        };
+
+        function calculate(input) {
+            const block = input.closest('.item-block');
+            const usd = block.querySelector('.usd-input').value;
+            const exch = block.querySelector('.ex-input').value;
+            const inr = block.querySelector('.inr-output');
+            
+            if (usd && exch) {
+                inr.value = (parseFloat(usd) * parseFloat(exch)).toFixed(2);
+            } else {
+                inr.value = "";
+            }
+        }
+
+        function addBlock() {
+            const container = document.getElementById('masterContainer');
+            const newBlock = document.createElement('div');
+            newBlock.className = 'item-block';
+            
+            newBlock.innerHTML = `
+                <div class="item-title">ITEM #<span class="item-number"></span></div>
+                <div class="parts-grid">
+                    <div class="col"><label>RFQ Part #</label><input type="text"></div>
+                    <div class="col"><label>Quoted Part #</label><input type="text"></div>
+                    <div class="col"><label>Supplier</label><input type="text"></div>
+                    <div class="col"><label>Date Code</label><input type="text"></div>
+                    <div class="col"><label>RFQ Qty</label><input type="number"></div>
+                    <div class="col"><label>Quoted Qty</label><input type="number"></div>
+                    <div class="col"><label>Make</label><input type="text"></div>
+                    <div class="col"><label>Lead</label><input type="text"></div>
+                    <button type="button" class="btn-remove" onclick="removeBlock(this)">×</button>
+                </div>
+                <div class="pricing-grid">
+                    <div class="col"><label>Unit $</label><input type="number" step="0.0001" class="usd-input" oninput="calculate(this)"></div>
+                    <div class="col"><label>Exch</label><input type="number" class="ex-input" oninput="calculate(this)"></div>
+                    <div class="col"><label>Unit ₹</label><input type="number" readonly class="inr-output" style="background:#f1f5f9;"></div>
+                    <div class="col"><label>Freight</label><input type="text"></div>
+                    <div class="col"><label>Insurance</label><input type="text"></div>
+                    <div class="col"><label>BCD</label><input type="text"></div>
+                    <div class="col"><label>Bank</label><input type="text"></div>
+                    <div class="col"><label>Clearance</label><input type="text"></div>
+                    <div class="col"><label>Margin</label><input type="text"></div>
+                    <div class="col"><label>Resale</label><input type="text"></div>
+                    <div class="col"><label>TP</label><input type="text"></div>
+                    <div class="col"><label>Remarks</label><input type="text"></div>
+                </div>
+            `;
+            container.appendChild(newBlock);
+            reindexItems();
+        }
+
+        function removeBlock(button) {
+            const block = button.closest('.item-block');
+            block.remove();
+            reindexItems();
+        }
+
+        function reindexItems() {
+            const items = document.querySelectorAll('.item-block');
+            items.forEach((item, index) => {
+                const numSpan = item.querySelector('.item-number');
+                if (numSpan) {
+                    numSpan.innerText = index + 1;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
