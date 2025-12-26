@@ -249,7 +249,7 @@
                 </form>
 
                 <div class="login-link">
-                    Already have an account? <a href="#">Sign In</a>
+                    Already have an account? <a href="/login">Sign In</a>
                 </div>
             </div>
 
@@ -270,7 +270,7 @@
         
         const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-        signupForm.addEventListener('submit', (e) => {
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             let valid = true;
 
@@ -296,8 +296,28 @@
             }
 
             if (valid) {
-                document.getElementById('signupFormSection').style.display = 'none';
-                document.getElementById('successMessage').style.display = 'block';
+                try {
+                    const response = await fetch('/api/signup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailInput.value, password: passwordInput.value })
+                    });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        document.getElementById('signupFormSection').style.display = 'none';
+                        document.getElementById('successMessage').style.display = 'block';
+                    } else {
+                        // Show error
+                        document.getElementById('passError').textContent = data.error || "Signup failed";
+                        document.getElementById('passError').style.display = 'block';
+                        passwordInput.parentElement.parentElement.classList.add('error');
+                    }
+                } catch (error) {
+                    document.getElementById('passError').textContent = "Network error";
+                    document.getElementById('passError').style.display = 'block';
+                    passwordInput.parentElement.parentElement.classList.add('error');
+                }
             }
         });
 
