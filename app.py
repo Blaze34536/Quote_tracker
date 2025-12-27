@@ -14,7 +14,7 @@ csrf.exempt(api)
 @app.route("/rfq-entry")
 @login_required
 def rfq(user):
-    return render_template("rfqeditor2.html") 
+    return render_template("rfqeditor.html") 
 
 @app.route("/")
 @login_required

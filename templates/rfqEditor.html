@@ -46,7 +46,7 @@
 <body>
 
     <div class="header">
-        <div><strong>RFQ Entry</div>
+        <div><strong id="pageTitle">RFQ Entry</strong></div>
         <div class="nav-links">
             <span class="user-name"></span>
             <a href="/rfq-list">RFQ List</a>
@@ -57,24 +57,24 @@
     <div class="card">
         <div class="col" style="max-width: 200px;">
             <label>Date</label>
-            <input type="date" value="2025-12-25">
+            <input type="date" id="rfq_date">
         </div>
     </div>
 
     <div class="card">
         <div class="card-title">Sales & Customer</div>
         <div class="row">
-            <div class="col"><label>RFQ No</label><input type="text"></div>
-            <div class="col"><label>Company Name</label><input type="text"></div>
+            <div class="col"><label>RFQ No</label><input type="text" id="rfq_no"></div>
+            <div class="col"><label>Company Name</label><input type="text" id="company_name"></div>
             <div class="col">
                 <label>Sales Person</label>
-                <select>
-                  <option>Select</option>
-                  <option>1</option>
-                  <option>2</option>
+                <select id="sales_person">
+                  <option value="">Select</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
                 </select>
             </div>
-            <div class="col"><label>Customer Name</label><input type="text"></div>
+            <div class="col"><label>Customer Name</label><input type="text" id="customer_name"></div>
         </div>
     </div>
 
@@ -86,13 +86,6 @@
                 <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
                 <label>Make</label><label>Lead</label>
                 <div></div>
-            </div>
-            
-            <div class="parts-row" id="part-row-1">
-                <input type="text"><input type="text"><input type="text">
-                <input type="text"><input type="number"><input type="number">
-                <input type="text"><input type="text">
-                <button type="button" class="btn-remove" onclick="removeLinkedRow(1)">×</button>
             </div>
         </div>
         <button type="button" class="btn-add" onclick="addLinkedRow()">+ Add Part</button>
@@ -107,24 +100,58 @@
                 <label>Bank</label><label>Clear.</label><label>Margin</label>
                 <label>Resale</label><label>TP</label><label>Remarks</label>
             </div>
-
-            <div class="pricing-row" id="price-row-1">
-                <input type="number" step="0.0001" oninput="calculateINR(1)" id="usd-1">
-                <input type="number" oninput="calculateINR(1)" id="exch-1">
-                <input type="number" readonly id="inr-1" style="background:#f8f9fa;">
-                <input type="text"><input type="text"><input type="text">
-                <input type="text"><input type="text"><input type="text">
-                <input type="text"><input type="text"><input type="text">
-            </div>
         </div>
     </div>
 
     <div class="status-footer">
-        <button class="btn-save">Save RFQ</button>
+        <button class="btn-save" onclick="saveRFQ()">Save RFQ</button>
     </div>
 
     <script>
-        let rowCount = 1;
+        let rowCount = 0;
+        let currentRfqId = null;
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            currentRfqId = urlParams.get('edit');
+
+            if (currentRfqId) {
+                document.getElementById('pageTitle').innerText = "Edit RFQ #" + currentRfqId;
+                loadExistingRFQ(currentRfqId);
+            } else {
+                document.getElementById('rfq_date').valueAsDate = new Date();
+                addLinkedRow();
+            }
+        };
+
+        async function loadExistingRFQ(id) {
+            try {
+                const response = await fetch(`/api/get-rfq/${id}`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const rfq = result.data;
+                    
+                    document.getElementById('rfq_no').value = rfq['RFQ-no'] || '';
+                    document.getElementById('company_name').value = rfq.Company_name || '';
+                    document.getElementById('sales_person').value = rfq.Sales_person || '';
+                    document.getElementById('customer_name').value = rfq.Customer_name || '';
+                    
+                    if (rfq.created_at) {
+                        document.getElementById('rfq_date').value = rfq.created_at.split('T')[0];
+                    }
+
+                    if (rfq.Part_details && rfq.Part_details.length > 0) {
+                        rfq.Part_details.forEach(item => addLinkedRow(item));
+                    } else {
+                        addLinkedRow();
+                    }
+                }
+            } catch (err) {
+                console.error("Load Error:", err);
+                alert("Failed to load RFQ data.");
+            }
+        }
 
         function calculateINR(id) {
             const usd = document.getElementById(`usd-${id}`).value;
@@ -137,17 +164,27 @@
             }
         }
 
-        function addLinkedRow() {
+        function addLinkedRow(data = null) {
             rowCount++;
+            
+            let defaultExch = "83";
+            if (data && data['Unit$'] && data['Unit₹']) {
+                defaultExch = (data['Unit₹'] / data['Unit$']).toFixed(2);
+            }
             
             const pContainer = document.getElementById('partsContainer');
             const pRow = document.createElement('div');
             pRow.className = 'parts-row';
             pRow.id = `part-row-${rowCount}`;
             pRow.innerHTML = `
-                <input type="text"><input type="text"><input type="text">
-                <input type="text"><input type="number"><input type="number">
-                <input type="text"><input type="text">
+                <input type="text" class="rfq_part_no" value="${data ? data['RFQ-part-no'] : ''}">
+                <input type="text" class="quoted_part_no" value="${data ? (data['Quoted-part-no'] || '') : ''}">
+                <input type="text" class="supplier" value="${data ? (data['Supplier'] || '') : ''}">
+                <input type="date" class="date_code" value="${data ? (data['Date Code'] || '') : ''}">
+                <input type="number" class="rfq_qty" value="${data ? data['RFQ Qty'] : ''}">
+                <input type="number" class="quoted_qty" value="${data ? data['Quoted Qty'] : ''}">
+                <input type="text" class="make" value="${data ? (data['Make'] || '') : ''}">
+                <input type="text" class="lead_time" value="${data ? (data['Lead'] || '') : ''}">
                 <button type="button" class="btn-remove" onclick="removeLinkedRow(${rowCount})">×</button>
             `;
             pContainer.appendChild(pRow);
@@ -157,19 +194,98 @@
             prRow.className = 'pricing-row';
             prRow.id = `price-row-${rowCount}`;
             prRow.innerHTML = `
-                <input type="number" step="0.0001" id="usd-${rowCount}" oninput="calculateINR(${rowCount})">
-                <input type="number" id="exch-${rowCount}" oninput="calculateINR(${rowCount})">
-                <input type="number" readonly id="inr-${rowCount}" style="background:#f8f9fa;">
-                <input type="text"><input type="text"><input type="text">
-                <input type="text"><input type="text"><input type="text">
-                <input type="text"><input type="text"><input type="text">
+                <input type="number" step="0.0001" id="usd-${rowCount}" oninput="calculateINR(${rowCount})" value="${data ? data['Unit$'] : ''}">
+                <input type="number" id="exch-${rowCount}" oninput="calculateINR(${rowCount})" value="${defaultExch}">
+                <input type="number" readonly id="inr-${rowCount}" style="background:#f8f9fa;" value="${data ? data['Unit₹'] : ''}">
+                <input type="text" class="freight" value="${data ? (data['Freight'] || '') : ''}">
+                <input type="text" class="insurance" value="${data ? (data['Insur.'] || '') : ''}">
+                <input type="text" class="bcd" value="${data ? (data['BCD'] || '') : ''}">
+                <input type="text" class="bank" value="${data ? (data['Bank'] || '') : ''}">
+                <input type="text" class="clearance" value="${data ? (data['Clear.'] || '') : ''}">
+                <input type="text" class="margin" value="${data ? (data['Margin'] || '') : ''}">
+                <input type="text" class="resale" value="${data ? (data['Resale'] || '') : ''}">
+                <input type="text" class="tp" value="${data ? (data['TP'] || '') : ''}">
+                <input type="text" class="remarks" value="${data ? (data['Remarks'] || '') : ''}">
             `;
             prContainer.appendChild(prRow);
         }
 
         function removeLinkedRow(id) {
-            document.getElementById(`part-row-${id}`).remove();
-            document.getElementById(`price-row-${id}`).remove();
+            const partRow = document.getElementById(`part-row-${id}`);
+            const priceRow = document.getElementById(`price-row-${id}`);
+            
+            const remainingParts = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
+            
+            if (remainingParts.length > 1) {
+                partRow.remove();
+                priceRow.remove();
+            } else {
+                alert("At least one part is required.");
+            }
+        }
+
+        async function saveRFQ() {
+            const rfqData = {
+                id: currentRfqId,
+                rfq_no: document.getElementById('rfq_no').value,
+                rfq_date: document.getElementById('rfq_date').value,
+                company_name: document.getElementById('company_name').value,
+                sales_person: document.getElementById('sales_person').value,
+                customer_name: document.getElementById('customer_name').value,
+                items: []
+            };
+
+            if (!rfqData.rfq_no || !rfqData.company_name) {
+                alert("Please fill in RFQ Number and Company Name.");
+                return;
+            }
+
+            const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
+            partRows.forEach((partRow, index) => {
+                const priceRow = document.getElementById(`price-row-${partRow.id.split('-')[2]}`);
+                
+                const item = {
+                    rfq_part_no: partRow.querySelector('.rfq_part_no').value,
+                    quoted_part_no: partRow.querySelector('.quoted_part_no').value,
+                    supplier: partRow.querySelector('.supplier').value,
+                    date_code: partRow.querySelector('.date_code').value,
+                    rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
+                    quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
+                    make: partRow.querySelector('.make').value,
+                    lead_time: partRow.querySelector('.lead_time').value,
+                    unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${partRow.id.split('-')[2]}`).value) || 0,
+                    unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${partRow.id.split('-')[2]}`).value) || 0,
+                    freight: priceRow.querySelector('.freight').value,
+                    insurance: priceRow.querySelector('.insurance').value,
+                    bcd: priceRow.querySelector('.bcd').value,
+                    bank: priceRow.querySelector('.bank').value,
+                    clearance: priceRow.querySelector('.clearance').value,
+                    margin: priceRow.querySelector('.margin').value,
+                    resale: priceRow.querySelector('.resale').value,
+                    tp: priceRow.querySelector('.tp').value,
+                    remarks: priceRow.querySelector('.remarks').value
+                };
+                rfqData.items.push(item);
+            });
+
+            try {
+                const response = await fetch('/api/make-rfq-entry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rfqData)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert("Success! RFQ saved.");
+                    window.location.href = '/rfq-list';
+                } else {
+                    alert("Error: " + (result.error || "Failed to save RFQ"));
+                }
+            } catch (err) {
+                console.error("Save Error:", err);
+                alert("Network error.");
+            }
         }
     </script>
 
