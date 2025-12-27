@@ -263,71 +263,83 @@
     </div>
 
     <script>
-        const signupForm = document.getElementById('signupForm');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const confirmInput = document.getElementById('confirmPassword');
-        
-        const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const signupForm = document.getElementById('signupForm');
+    const fnameInput = document.getElementById('fname');
+    const lnameInput = document.getElementById('lname'); 
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirmPassword');
+    
+    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            let valid = true;
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        let valid = true;
 
-            // Simple Email Check
-            if (!isValidEmail(emailInput.value)) {
-                document.getElementById('emailError').style.display = 'block';
-                emailInput.parentElement.parentElement.classList.add('error');
-                valid = false;
-            }
+        // Reset errors
+        document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.form-group').forEach(el => el.classList.remove('error'));
 
-            // Password Length Check
-            if (passwordInput.value.length < 8) {
-                document.getElementById('passError').style.display = 'block';
-                passwordInput.parentElement.parentElement.classList.add('error');
-                valid = false;
-            }
+        // Simple Email Check
+        if (!isValidEmail(emailInput.value)) {
+            document.getElementById('emailError').style.display = 'block';
+            emailInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
 
-            // Match Check
-            if (passwordInput.value !== confirmInput.value) {
-                document.getElementById('confirmError').style.display = 'block';
-                confirmInput.parentElement.parentElement.classList.add('error');
-                valid = false;
-            }
+        // Password Length Check
+        if (passwordInput.value.length < 8) {
+            document.getElementById('passError').style.display = 'block';
+            passwordInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
 
-            if (valid) {
-                try {
-                    const response = await fetch('/api/signup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: emailInput.value, password: passwordInput.value })
-                    });
-                    const data = await response.json();
+        // Match Check
+        if (passwordInput.value !== confirmInput.value) {
+            document.getElementById('confirmError').style.display = 'block';
+            confirmInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
 
-                    if (response.ok) {
-                        document.getElementById('signupFormSection').style.display = 'none';
-                        document.getElementById('successMessage').style.display = 'block';
-                    } else {
-                        // Show error
-                        document.getElementById('passError').textContent = data.error || "Signup failed";
-                        document.getElementById('passError').style.display = 'block';
-                        passwordInput.parentElement.parentElement.classList.add('error');
-                    }
-                } catch (error) {
-                    document.getElementById('passError').textContent = "Network error";
+        if (valid) {
+            try {
+                const response = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: emailInput.value, 
+                        password: passwordInput.value,
+                        first_name: fnameInput.value,
+                        last_name: lnameInput.value   
+                    })
+                });
+                
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('signupFormSection').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+                } else {
+                    document.getElementById('passError').textContent = data.error || "Signup failed";
                     document.getElementById('passError').style.display = 'block';
                     passwordInput.parentElement.parentElement.classList.add('error');
                 }
+            } catch (error) {
+                document.getElementById('passError').textContent = "Network error";
+                document.getElementById('passError').style.display = 'block';
+                passwordInput.parentElement.parentElement.classList.add('error');
             }
-        });
+        }
+    });
 
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', () => {
-                input.parentElement.parentElement.classList.remove('error');
-                const error = input.parentElement.parentElement.querySelector('.error-message');
-                if(error) error.style.display = 'none';
-            });
+    // Existing input listener to clear errors
+    document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', () => {
+            input.parentElement.parentElement.classList.remove('error');
+            const error = input.parentElement.parentElement.querySelector('.error-message');
+            if(error) error.style.display = 'none';
         });
-    </script>
+    });
+</script>
 </body>
 </html>

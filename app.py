@@ -11,11 +11,15 @@ csrf = CSRFProtect(app)
 app.register_blueprint(api)
 csrf.exempt(api)
 
-# Web Routes (Pages)
-@app.route("/")
+@app.route("/rfq-entry")
 @login_required
 def rfq(user):
-    return render_template("rfqEditor2.html")
+    return render_template("rfqEditor2.html") 
+
+@app.route("/")
+@login_required
+def index(user):
+    return redirect(url_for('rfq'))
 
 @app.route("/login")
 def login():
