@@ -215,7 +215,7 @@
                         required
                     >
                     <label for="password">Password</label>
-                    <button type="button" class="password-toggle" id="passwordToggle">👁️</button>
+                    <button type="button" class="password-toggle" id="passwordToggle">show</button>
                 </div>
             </div>
 
@@ -247,7 +247,7 @@
     passwordToggle.addEventListener('click', () => {
         const type = passwordInput.type === 'password' ? 'text' : 'password';
         passwordInput.type = type;
-        passwordToggle.textContent = type === 'password' ? '👁️' : '🙈';
+        passwordToggle.textContent = type === 'password' ? 'show' : 'hide';
     });
 
     // Show error message

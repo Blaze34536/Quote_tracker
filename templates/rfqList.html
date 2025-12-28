@@ -3,75 +3,282 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFQ List - Professional Hybrid</title>
+    <title>RFQ List</title>
     <style>
-        :root {
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --border-color: #cbd5e1;
-            --primary-blue: #2563eb;
-            --label-color: #475569;
-            --text-main: #1e293b;
-            --danger-red: #dc2626;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; font-size: 13px; color: var(--text-main); }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .nav-links { display: flex; gap: 10px; align-items: center; }
-        .nav-links a { color: var(--primary-blue); text-decoration: none; font-weight: 600; border: 1px solid #e2e8f0; padding: 6px 14px; border-radius: 6px; background: white; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            color: #333;
+            line-height: 1.5;
+        }
         
-        .card { background: var(--card-bg); border-radius: 8px; border: 1px solid #e2e8f0; padding: 0; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background: #f1f5f9; color: var(--label-color); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
-        td { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
         
-        tr.main-row:hover { background-color: #f8fafc; cursor: pointer; }
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
         
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: #e0f2fe; color: #0369a1; }
-
-        .action-btns { display: flex; gap: 8px; }
-        .btn-edit { color: var(--primary-blue); background: #eff6ff; border: 1px solid #dbeafe; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
-        .btn-delete { color: var(--danger-red); background: #fef2f2; border: 1px solid #fee2e2; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
-        .btn-edit:hover { background: #dbeafe; }
-        .btn-delete:hover { background: #fee2e2; }
-
-        .parts-container { background: #fdfdfd; padding: 15px; border-bottom: 1px solid var(--border-color); display: none; }
-        .parts-container.active { display: block; }
+        .nav-links a {
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
         
-        .inner-table { background: white; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; width: 100%; }
-        .inner-table th { background: #fff; border-bottom: 2px solid #f1f5f9; color: var(--primary-blue); }
-
-        .loading { padding: 20px; text-align: center; color: #64748b; font-style: italic; }
+        .btn-new {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .btn-new:hover {
+            background: #0052a3;
+        }
+        
+        .btn-logout {
+            background: white;
+            color: #666;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-logout:hover {
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 40px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #fafafa;
+            color: #666;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        tr.main-row {
+            transition: background 0.1s;
+        }
+        
+        tr.main-row:hover {
+            background: #fafafa;
+            cursor: pointer;
+        }
+        
+        .rfq-number {
+            font-weight: 600;
+            color: #0066cc;
+        }
+        
+        .customer-name {
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .customer-email {
+            font-size: 13px;
+            color: #999;
+            margin-top: 2px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #f0f0f0;
+            color: #666;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .items-count {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-edit,
+        .btn-delete {
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid;
+            transition: all 0.15s;
+        }
+        
+        .btn-edit {
+            color: #0066cc;
+            background: white;
+            border-color: #d9d9d9;
+        }
+        
+        .btn-edit:hover {
+            background: #f0f7ff;
+            border-color: #0066cc;
+        }
+        
+        .btn-delete {
+            color: #cc0000;
+            background: white;
+            border-color: #d9d9d9;
+        }
+        
+        .btn-delete:hover {
+            background: #fff5f5;
+            border-color: #cc0000;
+        }
+        
+        .parts-container {
+            background: #fafafa;
+            padding: 20px;
+            display: none;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        .parts-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .inner-table {
+            background: white;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .inner-table th {
+            background: white;
+            color: #666;
+            font-size: 11px;
+            padding: 10px 16px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        
+        .inner-table td {
+            padding: 12px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .inner-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .inner-table tbody tr:hover {
+            background: #fafafa;
+        }
+        
+        .price-usd {
+            color: #0066cc;
+            font-weight: 500;
+        }
+        
+        .resale-value {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .loader-container {
+            padding: 60px 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-
     <div class="header">
-        <div><strong>RFQ Tracking History</strong></div>
+        <h1>RFQ Tracking History</h1>
         <div class="nav-links">
-            <a href="/rfq-entry" style="background: var(--primary-blue); color: white;">+ New RFQ</a>
-            <a href="/logout">Logout</a>
+            <a href="/rfq-entry" class="btn-new">+ New RFQ</a>
+            <a href="/logout" class="btn-logout">Logout</a>
         </div>
     </div>
 
-    <div class="card">
-        <table id="rfqTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>RFQ No</th>
-                    <th>Company Name</th>
-                    <th>Customer</th>
-                    <th>Sales Person</th>
-                    <th>Items</th>
-                    <th style="width: 140px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="rfqListBody"></tbody>
-        </table>
-        <div id="loader" class="loading">Fetching records from Supabase...</div>
+    <div class="container">
+        <div class="card">
+            <table id="rfqTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>RFQ No</th>
+                        <th>Company</th>
+                        <th>Customer & Contact</th>
+                        <th>Purpose</th>
+                        <th>Sales</th>
+                        <th>Items</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="rfqListBody"></tbody>
+            </table>
+            <div id="loader" class="loader-container">Loading records...</div>
+        </div>
     </div>
 
     <script>
@@ -85,39 +292,44 @@
 
                 if (result.success) {
                     renderTable(result.data);
-                } else {
-                    alert("Error: " + result.error);
                 }
             } catch (err) {
-                console.error(err);
                 document.getElementById('loader').innerText = "Failed to load data.";
             }
         }
 
         function renderTable(data) {
             const body = document.getElementById('rfqListBody');
-            body.innerHTML = "";
-
+            
             if (data.length === 0) {
-                body.innerHTML = "<tr><td colspan='7' style='text-align:center;'>No RFQs found.</td></tr>";
+                body.innerHTML = `<tr><td colspan="8" class="empty-state">No RFQs found.</td></tr>`;
                 return;
             }
+
+            body.innerHTML = '';
 
             data.forEach(rfq => {
                 const row = document.createElement('tr');
                 row.className = 'main-row';
                 row.onclick = () => toggleParts(rfq.id);
                 
-                const dateObj = new Date(rfq.created_at);
-                const dateStr = dateObj.toLocaleDateString('en-IN');
+                const dateStr = new Date(rfq.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
 
                 row.innerHTML = `
                     <td>${dateStr}</td>
-                    <td><strong>${rfq['RFQ-no'] || 'N/A'}</strong></td>
+                    <td><span class="rfq-number">${rfq['RFQ-no'] || 'N/A'}</span></td>
                     <td>${rfq.Company_name}</td>
-                    <td>${rfq.Customer_name || '-'}</td>
+                    <td>
+                        <div class="customer-name">${rfq.Customer_name || '-'}</div>
+                        <div class="customer-email">${rfq.Customer_email || ''}</div>
+                    </td>
+                    <td>${rfq.RFQ_purpose || '-'}</td>
                     <td><span class="status-badge">${rfq.Sales_person}</span></td>
-                    <td>${rfq.Part_details.length} Items</td>
+                    <td><span class="items-count">${rfq.Part_details ? rfq.Part_details.length : 0}</span></td>
                     <td>
                         <div class="action-btns">
                             <button class="btn-edit" onclick="editRFQ(event, ${rfq.id})">Edit</button>
@@ -131,30 +343,35 @@
                 detailRow.id = `details-${rfq.id}`;
                 detailRow.style.display = 'none';
                 
-                let partsHtml = rfq.Part_details.map(p => `
+                let partsHtml = (rfq.Part_details || []).map(p => `
                     <tr>
                         <td>${p['RFQ-part-no']}</td>
                         <td>${p['Quoted-part-no'] || '-'}</td>
                         <td>${p['Supplier'] || '-'}</td>
                         <td>${p['RFQ Qty']}</td>
-                        <td>$${p['Unit$'] ? p['Unit$'].toFixed(2) : '0.00'}</td>
-                        <td>₹${p['Unit₹'] ? p['Unit₹'].toFixed(2) : '0.00'}</td>
+                        <td><span class="price-usd">$${p['Unit$'] || '0.00'}</span></td>
+                        <td>₹${p['Unit₹'] || '0.00'}</td>
+                        <td>${p['Margin'] || 0}%</td>
+                        <td><span class="resale-value">₹${p['Resale'] || '0.00'}</span></td>
                         <td>${p['Remarks'] || '-'}</td>
                     </tr>
                 `).join('');
 
                 detailRow.innerHTML = `
-                    <td colspan="7" style="padding:0;">
-                        <div class="parts-container">
+                    <td colspan="8" style="padding:0;">
+                        <div class="parts-container" id="cont-${rfq.id}">
+                            <div class="parts-header">Pricing Details</div>
                             <table class="inner-table">
                                 <thead>
                                     <tr>
-                                        <th>RFQ Part #</th>
-                                        <th>Quoted Part #</th>
+                                        <th>Part #</th>
+                                        <th>Quoted #</th>
                                         <th>Supplier</th>
                                         <th>Qty</th>
-                                        <th>Unit ($)</th>
-                                        <th>Unit (₹)</th>
+                                        <th>Unit $</th>
+                                        <th>Unit ₹</th>
+                                        <th>Margin</th>
+                                        <th>Resale</th>
                                         <th>Remarks</th>
                                     </tr>
                                 </thead>
@@ -169,39 +386,25 @@
 
         function toggleParts(id) {
             const detailRow = document.getElementById(`details-${id}`);
-            const container = detailRow.querySelector('.parts-container');
-            
+            const container = document.getElementById(`cont-${id}`);
             if (detailRow.style.display === 'none') {
                 detailRow.style.display = 'table-row';
-                setTimeout(() => container.classList.add('active'), 10);
+                container.style.display = 'block';
             } else {
-                container.classList.remove('active');
-                setTimeout(() => detailRow.style.display = 'none', 200);
+                detailRow.style.display = 'none';
             }
         }
 
         function editRFQ(event, id) {
-            event.stopPropagation(); // Prevents toggling the detail view
+            event.stopPropagation();
             window.location.href = `/rfq-entry?edit=${id}`;
         }
 
         async function deleteRFQ(event, id) {
             event.stopPropagation();
-            if (!confirm("Are you sure you want to delete this RFQ? This action cannot be undone.")) return;
-
-            try {
-                const response = await fetch(`/api/delete-rfq/${id}`, { method: 'DELETE' });
-                const result = await response.json();
-
-                if (result.success) {
-                    alert("RFQ deleted successfully.");
-                    fetchRFQs(); // Refresh list
-                } else {
-                    alert("Error: " + result.error);
-                }
-            } catch (err) {
-                alert("Failed to delete RFQ.");
-            }
+            if (!confirm("Are you sure you want to delete this RFQ?")) return;
+            const res = await fetch(`/api/delete-rfq/${id}`, { method: 'DELETE' });
+            if (res.ok) fetchRFQs();
         }
     </script>
 </body>

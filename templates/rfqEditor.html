@@ -34,7 +34,7 @@
 
         /* Grid Layouts - No ID Column */
         .parts-row { display: grid; grid-template-columns: repeat(8, 1fr) 35px; gap: 8px; align-items: end; margin-bottom: 8px; }
-        .pricing-row { display: grid; grid-template-columns: repeat(11, 1fr) 2fr; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
+        .pricing-row { display: grid; grid-template-columns: 100px repeat(11, 1fr) 2fr; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
         
         .btn-add { background-color: var(--success-green); color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-save { background-color: var(--primary-blue); color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold; float: right; }
@@ -55,9 +55,23 @@
     </div>
 
     <div class="card">
-        <div class="col" style="max-width: 200px;">
-            <label>Date</label>
-            <input type="date" id="rfq_date">
+        <div class="row">
+            <div class="col" style="max-width: 150px;">
+                <label>Date</label>
+                <input type="date" id="rfq_date">
+            </div>
+            <div class="col" style="max-width: 150px;">
+                <label>RFQ Purpose</label>
+                <select id="rfq_purpose" onchange="handlePurposeChange()">
+                  <option value="">Select</option>
+                  <option value="Bidding">Bidding</option>
+                  <option value="Buying">Buying</option>
+                </select>
+            </div>
+            <div class="col" style="max-width: 180px;">
+                <label>Tentative Buying Date <span id="date_required" style="color: var(--danger-red); display: none;">*</span></label>
+                <input type="date" id="tentative_date">
+            </div>
         </div>
     </div>
 
@@ -75,6 +89,10 @@
                 </select>
             </div>
             <div class="col"><label>Customer Name</label><input type="text" id="customer_name"></div>
+        </div>
+        <div class="row">
+            <div class="col"><label>Customer Email</label><input type="email" id="customer_email"></div>
+            <div class="col"><label>Customer Phone</label><input type="tel" id="customer_phone"></div>
         </div>
     </div>
 
@@ -95,6 +113,7 @@
         <div class="card-title">Pricing (Per Part)</div>
         <div id="pricingContainer">
             <div class="pricing-row" style="margin-bottom: 5px;">
+                <label>Source</label>
                 <label>Unit $</label><label>Exch</label><label>Unit ₹</label>
                 <label>Freight</label><label>Insur.</label><label>BCD</label>
                 <label>Bank</label><label>Clear.</label><label>Margin</label>
@@ -105,6 +124,7 @@
 
     <div class="status-footer">
         <button class="btn-save" onclick="saveRFQ()">Save RFQ</button>
+        <button class="btn-save" onclick="resetForm()" style="background-color: #6c757d; margin-right: 10px;">Reset</button>
     </div>
 
     <script>
@@ -124,6 +144,90 @@
             }
         };
 
+        function handlePurposeChange() {
+            const purpose = document.getElementById('rfq_purpose').value;
+            const dateRequired = document.getElementById('date_required');
+            
+            if (purpose === 'Bidding') {
+                dateRequired.style.display = 'inline';
+            } else {
+                dateRequired.style.display = 'none';
+            }
+        }
+
+        function handleSourceChange(rowId) {
+            const sourceSelect = document.getElementById(`source-${rowId}`);
+            const source = sourceSelect ? sourceSelect.value : '';
+            const priceRow = document.getElementById(`price-row-${rowId}`);
+            
+            if (!priceRow) return;
+            
+            const usdField = priceRow.querySelector(`#usd-${rowId}`);
+            const inrField = priceRow.querySelector(`#inr-${rowId}`);
+            const exchField = priceRow.querySelector(`#exch-${rowId}`);
+            const insurance = priceRow.querySelector('.insurance');
+            const bcd = priceRow.querySelector('.bcd');
+            const bank = priceRow.querySelector('.bank');
+            const clearance = priceRow.querySelector('.clearance');
+            
+            if (source === 'Local') {
+                // For Local: Disable USD (make it calculated), Enable INR input
+                /* COMMENTED OUT - No longer converting back to USD for local
+                usdField.readOnly = true;
+                usdField.style.backgroundColor = '#f8f9fa';
+                inrField.readOnly = false;
+                inrField.style.backgroundColor = '';
+                inrField.setAttribute('oninput', `calculateUSD(${rowId})`);
+                exchField.setAttribute('oninput', `calculateUSD(${rowId})`);
+                */
+                
+                // For Local: Just enter INR directly, no conversion needed
+                usdField.readOnly = true;
+                usdField.style.backgroundColor = '#f8f9fa';
+                usdField.value = '';
+                inrField.readOnly = false;
+                inrField.style.backgroundColor = '';
+                inrField.removeAttribute('oninput');
+                exchField.value = '';
+                exchField.readOnly = true;
+                exchField.style.backgroundColor = '#f8f9fa';
+                
+                // Disable import-related fields
+                insurance.disabled = true;
+                bcd.disabled = true;
+                bank.disabled = true;
+                clearance.disabled = true;
+                insurance.value = '';
+                bcd.value = '';
+                bank.value = '';
+                clearance.value = '';
+                insurance.style.backgroundColor = '#e9ecef';
+                bcd.style.backgroundColor = '#e9ecef';
+                bank.style.backgroundColor = '#e9ecef';
+                clearance.style.backgroundColor = '#e9ecef';
+            } else if (source === 'Import') {
+                // For Import: Enable USD input, Disable INR (make it calculated)
+                usdField.readOnly = false;
+                usdField.style.backgroundColor = '';
+                inrField.readOnly = true;
+                inrField.style.backgroundColor = '#f8f9fa';
+                usdField.setAttribute('oninput', `calculateINR(${rowId})`);
+                exchField.readOnly = false;
+                exchField.style.backgroundColor = '';
+                exchField.setAttribute('oninput', `calculateINR(${rowId})`);
+                
+                // Enable import-related fields
+                insurance.disabled = false;
+                bcd.disabled = false;
+                bank.disabled = false;
+                clearance.disabled = false;
+                insurance.style.backgroundColor = '';
+                bcd.style.backgroundColor = '';
+                bank.style.backgroundColor = '';
+                clearance.style.backgroundColor = '';
+            }
+        }
+
         async function loadExistingRFQ(id) {
             try {
                 const response = await fetch(`/api/get-rfq/${id}`);
@@ -136,11 +240,17 @@
                     document.getElementById('company_name').value = rfq.Company_name || '';
                     document.getElementById('sales_person').value = rfq.Sales_person || '';
                     document.getElementById('customer_name').value = rfq.Customer_name || '';
+                    document.getElementById('customer_email').value = rfq.Customer_email || '';
+                    document.getElementById('customer_phone').value = rfq.Customer_phone || '';
+                    document.getElementById('rfq_purpose').value = rfq.RFQ_purpose || '';
+                    document.getElementById('tentative_date').value = rfq.Tentative_date || '';
                     
                     if (rfq.created_at) {
                         document.getElementById('rfq_date').value = rfq.created_at.split('T')[0];
                     }
 
+                    handlePurposeChange();
+                    
                     if (rfq.Part_details && rfq.Part_details.length > 0) {
                         rfq.Part_details.forEach(item => addLinkedRow(item));
                     } else {
@@ -154,15 +264,40 @@
         }
 
         function calculateINR(id) {
+            const sourceSelect = document.getElementById(`source-${id}`);
+            const source = sourceSelect ? sourceSelect.value : '';
             const usd = document.getElementById(`usd-${id}`).value;
             const exch = document.getElementById(`exch-${id}`).value;
             const inrField = document.getElementById(`inr-${id}`);
+            
+            if (source === 'Local') {
+                return;
+            }
+            
             if (usd && exch) {
                 inrField.value = (parseFloat(usd) * parseFloat(exch)).toFixed(2);
             } else {
                 inrField.value = "";
             }
         }
+
+        /* COMMENTED OUT - No longer converting back to USD for local source
+        function calculateUSD(id) {
+            const sourceSelect = document.getElementById(`source-${id}`);
+            const source = sourceSelect ? sourceSelect.value : '';
+            if (source !== 'Local') return;
+            
+            const inr = document.getElementById(`inr-${id}`).value;
+            const exch = document.getElementById(`exch-${id}`).value;
+            const usdField = document.getElementById(`usd-${id}`);
+            
+            if (inr && exch) {
+                usdField.value = (parseFloat(inr) / parseFloat(exch)).toFixed(4);
+            } else {
+                usdField.value = "";
+            }
+        }
+        */
 
         function addLinkedRow(data = null) {
             rowCount++;
@@ -177,12 +312,12 @@
             pRow.className = 'parts-row';
             pRow.id = `part-row-${rowCount}`;
             pRow.innerHTML = `
-                <input type="text" class="rfq_part_no" value="${data ? data['RFQ-part-no'] : ''}">
+                <input type="text" class="rfq_part_no" value="${data ? (data['RFQ-part-no'] || '') : ''}">
                 <input type="text" class="quoted_part_no" value="${data ? (data['Quoted-part-no'] || '') : ''}">
                 <input type="text" class="supplier" value="${data ? (data['Supplier'] || '') : ''}">
                 <input type="date" class="date_code" value="${data ? (data['Date Code'] || '') : ''}">
-                <input type="number" class="rfq_qty" value="${data ? data['RFQ Qty'] : ''}">
-                <input type="number" class="quoted_qty" value="${data ? data['Quoted Qty'] : ''}">
+                <input type="number" class="rfq_qty" value="${data ? (data['RFQ Qty'] || '') : ''}">
+                <input type="number" class="quoted_qty" value="${data ? (data['Quoted Qty'] || '') : ''}">
                 <input type="text" class="make" value="${data ? (data['Make'] || '') : ''}">
                 <input type="text" class="lead_time" value="${data ? (data['Lead'] || '') : ''}">
                 <button type="button" class="btn-remove" onclick="removeLinkedRow(${rowCount})">×</button>
@@ -193,10 +328,16 @@
             const prRow = document.createElement('div');
             prRow.className = 'pricing-row';
             prRow.id = `price-row-${rowCount}`;
+            
             prRow.innerHTML = `
-                <input type="number" step="0.0001" id="usd-${rowCount}" oninput="calculateINR(${rowCount})" value="${data ? data['Unit$'] : ''}">
+                <select id="source-${rowCount}" onchange="handleSourceChange(${rowCount})">
+                    <option value="">Select</option>
+                    <option value="Import" ${data && data['Source'] === 'Import' ? 'selected' : ''}>Import</option>
+                    <option value="Local" ${data && data['Source'] === 'Local' ? 'selected' : ''}>Local</option>
+                </select>
+                <input type="number" step="0.0001" id="usd-${rowCount}" oninput="calculateINR(${rowCount})" value="${data ? (data['Unit$'] || '') : ''}">
                 <input type="number" id="exch-${rowCount}" oninput="calculateINR(${rowCount})" value="${defaultExch}">
-                <input type="number" readonly id="inr-${rowCount}" style="background:#f8f9fa;" value="${data ? data['Unit₹'] : ''}">
+                <input type="number" id="inr-${rowCount}" value="${data ? (data['Unit₹'] || '') : ''}" readonly style="background:#f8f9fa;">
                 <input type="text" class="freight" value="${data ? (data['Freight'] || '') : ''}">
                 <input type="text" class="insurance" value="${data ? (data['Insur.'] || '') : ''}">
                 <input type="text" class="bcd" value="${data ? (data['BCD'] || '') : ''}">
@@ -208,6 +349,11 @@
                 <input type="text" class="remarks" value="${data ? (data['Remarks'] || '') : ''}">
             `;
             prContainer.appendChild(prRow);
+            
+            // Apply source restrictions based on data
+            if (data && data['Source']) {
+                handleSourceChange(rowCount);
+            }
         }
 
         function removeLinkedRow(id) {
@@ -225,49 +371,57 @@
         }
 
         async function saveRFQ() {
-            const rfqData = {
-                id: currentRfqId,
-                rfq_no: document.getElementById('rfq_no').value,
-                rfq_date: document.getElementById('rfq_date').value,
-                company_name: document.getElementById('company_name').value,
-                sales_person: document.getElementById('sales_person').value,
-                customer_name: document.getElementById('customer_name').value,
-                items: []
-            };
+    const purpose = document.getElementById('rfq_purpose').value;
+    const tentativeDate = document.getElementById('tentative_date').value;
+    
+    if (purpose === 'Bidding' && !tentativeDate) {
+        alert("Tentative Buying Date is required for Bidding purpose.");
+        return;
+    }
+    
+    const rfqData = {
+        id: currentRfqId,
+        rfq_no: document.getElementById('rfq_no').value,
+        company_name: document.getElementById('company_name').value,
+        sales_person: document.getElementById('sales_person').value,
+        customer_name: document.getElementById('customer_name').value,
+        customer_email: document.getElementById('customer_email').value,
+        customer_phone: document.getElementById('customer_phone').value,
+        rfq_purpose: purpose,
+        tentative_date: tentativeDate,
+        items: []
+    };
 
-            if (!rfqData.rfq_no || !rfqData.company_name) {
-                alert("Please fill in RFQ Number and Company Name.");
-                return;
-            }
-
-            const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
-            partRows.forEach((partRow, index) => {
-                const priceRow = document.getElementById(`price-row-${partRow.id.split('-')[2]}`);
-                
-                const item = {
-                    rfq_part_no: partRow.querySelector('.rfq_part_no').value,
-                    quoted_part_no: partRow.querySelector('.quoted_part_no').value,
-                    supplier: partRow.querySelector('.supplier').value,
-                    date_code: partRow.querySelector('.date_code').value,
-                    rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
-                    quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
-                    make: partRow.querySelector('.make').value,
-                    lead_time: partRow.querySelector('.lead_time').value,
-                    unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${partRow.id.split('-')[2]}`).value) || 0,
-                    unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${partRow.id.split('-')[2]}`).value) || 0,
-                    freight: priceRow.querySelector('.freight').value,
-                    insurance: priceRow.querySelector('.insurance').value,
-                    bcd: priceRow.querySelector('.bcd').value,
-                    bank: priceRow.querySelector('.bank').value,
-                    clearance: priceRow.querySelector('.clearance').value,
-                    margin: priceRow.querySelector('.margin').value,
-                    resale: priceRow.querySelector('.resale').value,
-                    tp: priceRow.querySelector('.tp').value,
-                    remarks: priceRow.querySelector('.remarks').value
-                };
-                rfqData.items.push(item);
-            });
-
+    const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
+    partRows.forEach((partRow) => {
+        const rowId = partRow.id.split('-')[2];
+        const priceRow = document.getElementById(`price-row-${rowId}`);
+        const sourceSelect = document.getElementById(`source-${rowId}`);
+        
+        const item = {
+            rfq_part_no: partRow.querySelector('.rfq_part_no').value,
+            quoted_part_no: partRow.querySelector('.quoted_part_no').value,
+            supplier: partRow.querySelector('.supplier').value,
+            date_code: partRow.querySelector('.date_code').value,
+            rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
+            quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
+            make: partRow.querySelector('.make').value,
+            lead_time: partRow.querySelector('.lead_time').value,
+            source: sourceSelect ? sourceSelect.value : '',
+            unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${rowId}`).value) || 0,
+            unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${rowId}`).value) || 0,
+            freight: parseFloat(priceRow.querySelector('.freight').value) || 0,
+            insurance: parseFloat(priceRow.querySelector('.insurance').value) || 0,
+            bcd: parseFloat(priceRow.querySelector('.bcd').value) || 0,
+            bank: parseFloat(priceRow.querySelector('.bank').value) || 0,
+            clearance: parseFloat(priceRow.querySelector('.clearance').value) || 0,
+            margin: parseFloat(priceRow.querySelector('.margin').value) || 0,
+            resale: parseFloat(priceRow.querySelector('.resale').value) || 0,
+            tp: priceRow.querySelector('.tp').value,
+            remarks: priceRow.querySelector('.remarks').value
+        };
+        rfqData.items.push(item);
+        });
             try {
                 const response = await fetch('/api/make-rfq-entry', {
                     method: 'POST',
@@ -285,6 +439,43 @@
             } catch (err) {
                 console.error("Save Error:", err);
                 alert("Network error.");
+            }
+        }
+
+        function resetForm() {
+            if (confirm("Are you sure you want to reset the form? All unsaved data will be lost.")) {
+                document.getElementById('rfq_no').value = '';
+                document.getElementById('company_name').value = '';
+                document.getElementById('sales_person').value = '';
+                document.getElementById('customer_name').value = '';
+                document.getElementById('customer_email').value = '';
+                document.getElementById('customer_phone').value = '';
+                document.getElementById('rfq_purpose').value = '';
+                document.getElementById('tentative_date').value = '';
+                document.getElementById('rfq_date').valueAsDate = new Date();
+                document.getElementById('date_required').style.display = 'none';
+                
+                // Clear all parts and pricing rows
+                document.getElementById('partsContainer').innerHTML = `
+                    <div class="parts-row" style="margin-bottom: 5px;">
+                        <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
+                        <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
+                        <label>Make</label><label>Lead</label>
+                        <div></div>
+                    </div>
+                `;
+                document.getElementById('pricingContainer').innerHTML = `
+                    <div class="pricing-row" style="margin-bottom: 5px;">
+                        <label>Source</label>
+                        <label>Unit $</label><label>Exch</label><label>Unit ₹</label>
+                        <label>Freight</label><label>Insur.</label><label>BCD</label>
+                        <label>Bank</label><label>Clear.</label><label>Margin</label>
+                        <label>Resale</label><label>TP</label><label>Remarks</label>
+                    </div>
+                `;
+                
+                rowCount = 0;
+                addLinkedRow();
             }
         }
     </script>

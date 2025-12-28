@@ -19,7 +19,7 @@ def rfq(user):
 @app.route("/")
 @login_required
 def index(user):
-    return redirect(url_for('rfq'))
+    return redirect(url_for('rfq_list'))
 
 @app.route("/login")
 def login():
