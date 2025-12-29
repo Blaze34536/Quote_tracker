@@ -25,17 +25,6 @@ def make_entry(user):
         }
         
         if existing_rfq_id:
-            # Save current state to history before updating
-            current_res = supabase.table("RFQ-Tracker").select("*, Part_details(*)").eq("id", existing_rfq_id).maybe_single().execute()
-            if current_res.data:
-                history_data = {
-                    "rfq_id": int(existing_rfq_id),  # Convert to int since RFQ-Tracker.id is   
-                    "edited_by": user.id,
-                    "edit_timestamp": "now()",
-                    "old_data": current_res.data
-                }
-                supabase.table("rfq_edit_history").insert(history_data).execute()
-            
             supabase.table("RFQ-Tracker").update(header_data).eq("id", existing_rfq_id).execute()
             supabase.table("Part_details").delete().eq("rfq_id", existing_rfq_id).execute()
             new_rfq_id = existing_rfq_id
@@ -209,23 +198,5 @@ def delete_user(user, user_id):
         supabase.table("profiles").delete().eq("user_id", user_id).execute()
         # Note: Deleting from auth might require admin API, assuming profiles delete is enough
         return jsonify({"success": True}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@api.route('/rfq-history/<int:rfq_id>', methods=['GET'])
-@login_required
-def get_rfq_history(user, rfq_id):
-    supabase = get_supabase()
-    try:
-        # Check if user has access to this RFQ
-        rfq_check = supabase.table("RFQ-Tracker").select("id")
-        if user.role != "admin":
-            rfq_check = rfq_check.eq("created_by", user.id)
-        check_res = rfq_check.eq("id", rfq_id).execute()
-        if not check_res.data:
-            return jsonify({"error": "Access denied"}), 403
-        
-        res = supabase.table("rfq_edit_history").select("*").eq("rfq_id", int(rfq_id)).order("edit_timestamp", desc=True).execute()
-        return jsonify({"success": True, "data": res.data}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
