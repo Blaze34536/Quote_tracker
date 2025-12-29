@@ -25,6 +25,17 @@ def make_entry(user):
         }
         
         if existing_rfq_id:
+            # Save current state to history before updating
+            current_res = supabase.table("RFQ-Tracker").select("*, Part_details(*)").eq("id", existing_rfq_id).maybe_single().execute()
+            if current_res.data:
+                history_data = {
+                    "rfq_id": int(existing_rfq_id),  # Convert to int since RFQ-Tracker.id is   
+                    "edited_by": user.id,
+                    "edit_timestamp": "now()",
+                    "old_data": current_res.data
+                }
+                supabase.table("rfq_edit_history").insert(history_data).execute()
+            
             supabase.table("RFQ-Tracker").update(header_data).eq("id", existing_rfq_id).execute()
             supabase.table("Part_details").delete().eq("rfq_id", existing_rfq_id).execute()
             new_rfq_id = existing_rfq_id
@@ -70,11 +81,13 @@ def make_entry(user):
 def list_entry(user):
     supabase = get_supabase()
     try:
-        res = supabase.table("RFQ-Tracker") \
-            .select('*, Part_details(*)') \
-            .eq("created_by", user.id) \
-            .order("created_at", desc=True) \
-            .execute()
+        query = supabase.table("RFQ-Tracker") \
+            .select('*, Part_details(*)')
+        
+        if user.role != "admin":
+            query = query.eq("created_by", user.id)
+        
+        res = query.order("created_at", desc=True).execute()
         return jsonify({"success": True, "data": res.data}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -84,12 +97,13 @@ def list_entry(user):
 def get_rfq(user, rfq_id):
     supabase = get_supabase()
     try:
-        res = supabase.table("RFQ-Tracker") \
-            .select("*, Part_details(*)") \
-            .eq("id", rfq_id) \
-            .eq("created_by", user.id) \
-            .single() \
-            .execute()
+        query = supabase.table("RFQ-Tracker") \
+            .select("*, Part_details(*)")
+        
+        if user.role != "admin":
+            query = query.eq("created_by", user.id)
+        
+        res = query.eq("id", rfq_id).maybe_single().execute()
         return jsonify({"success": True, "data": res.data}), 200
     except Exception as e:
         return jsonify({"error": "Not found"}), 404
@@ -99,8 +113,119 @@ def get_rfq(user, rfq_id):
 def delete_rfq(user, rfq_id):
     supabase = get_supabase()
     try:
+        query = supabase.table("RFQ-Tracker")
+        if user.role != "admin":
+            query = query.eq("created_by", user.id)
+        
+        # First check if RFQ exists and user has access
+        check_res = query.select("id").eq("id", rfq_id).execute()
+        if not check_res.data:
+            return jsonify({"error": "Not found or access denied"}), 404
+        
         supabase.table("Part_details").delete().eq("rfq_id", rfq_id).execute()
-        supabase.table("RFQ-Tracker").delete().eq("id", rfq_id).eq("created_by", user.id).execute()
+        supabase.table("RFQ-Tracker").delete().eq("id", rfq_id).execute()
         return jsonify({"success": True}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route('/signup', methods=['POST'])
+def signup(user):
+    data = request.get_json()
+    supabase = get_supabase()
+    try:
+        # Create user in Supabase Auth
+        auth_res = supabase.auth.admin.create_user({
+            "email": data['email'],
+            "password": data['password'],
+            "email_confirm": True
+        })
+        
+        if auth_res.user:
+            # Create profile
+            profile_data = {
+                "user_id": auth_res.user.id,
+                "first_name": data.get('first_name', ''),
+                "last_name": data.get('last_name', ''),
+                "role": data.get('role', 'user')
+            }
+            supabase.table("profiles").insert(profile_data).execute()
+            
+        return jsonify({"success": True}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    supabase = get_supabase()
+    try:
+        auth_res = supabase.auth.sign_in_with_password({
+            "email": data['email'],
+            "password": data['password']
+        })
+        
+        if auth_res.user and auth_res.session:
+            response = jsonify({"success": True})
+            response.set_cookie('access_token', auth_res.session.access_token, httponly=True, secure=False, samesite='Lax')
+            response.set_cookie('csrf_token', auth_res.session.access_token[:10], httponly=False, secure=False, samesite='Lax')
+            return response, 200
+        else:
+            return jsonify({"error": "Invalid credentials"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route('/list-users', methods=['GET'])
+def list_users(user):
+    supabase = get_supabase()
+    try:
+        res = supabase.table("profiles").select("*").execute()
+        return jsonify({"success": True, "data": res.data}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route('/update-user/<user_id>', methods=['PUT'])
+def update_user(user, user_id):
+    data = request.get_json()
+    supabase = get_supabase()
+    try:
+        update_data = {}
+        if 'first_name' in data:
+            update_data['first_name'] = data['first_name']
+        if 'last_name' in data:
+            update_data['last_name'] = data['last_name']
+        if 'role' in data:
+            update_data['role'] = data['role']
+        
+        supabase.table("profiles").update(update_data).eq("user_id", user_id).execute()
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route('/delete-user/<user_id>', methods=['DELETE'])
+def delete_user(user, user_id):
+    supabase = get_supabase()
+    try:
+        # Delete profile
+        supabase.table("profiles").delete().eq("user_id", user_id).execute()
+        # Note: Deleting from auth might require admin API, assuming profiles delete is enough
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route('/rfq-history/<int:rfq_id>', methods=['GET'])
+@login_required
+def get_rfq_history(user, rfq_id):
+    supabase = get_supabase()
+    try:
+        # Check if user has access to this RFQ
+        rfq_check = supabase.table("RFQ-Tracker").select("id")
+        if user.role != "admin":
+            rfq_check = rfq_check.eq("created_by", user.id)
+        check_res = rfq_check.eq("id", rfq_id).execute()
+        if not check_res.data:
+            return jsonify({"error": "Access denied"}), 403
+        
+        res = supabase.table("rfq_edit_history").select("*").eq("rfq_id", int(rfq_id)).order("edit_timestamp", desc=True).execute()
+        return jsonify({"success": True, "data": res.data}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

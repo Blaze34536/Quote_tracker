@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create User</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .login-card {
+            background: #ffffff;
+            border: 1px solid #e1e5e9;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 20px 48px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #34d399, #059669);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h2 {
+            color: #1e293b;
+            font-size: 1.875rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #64748b;
+            font-size: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+            flex: 1;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-wrapper input, .input-wrapper select {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #1e293b;
+            font-size: 15px;
+            outline: none;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input:focus, .input-wrapper select:focus {
+            background: #ffffff;
+            border-color: #10b981;
+        }
+
+        .input-wrapper label {
+            position: absolute;
+            left: 16px;
+            top: 14px;
+            color: #64748b;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .input-wrapper input:focus + label,
+        .input-wrapper input:not(:placeholder-shown) + label,
+        .input-wrapper select:focus + label {
+            transform: translateY(-34px) translateX(4px) scale(0.85);
+            color: #059669;
+            font-weight: 600;
+            background: #ffffff;
+            padding: 0 8px;
+        }
+
+        .signup-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .signup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .login-link a {
+            color: #059669;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .error-message {
+            color: #dc2626;
+            font-size: 11px;
+            margin-top: 4px;
+            display: none;
+            padding-left: 4px;
+        }
+
+        .form-group.error input, .form-group.error select {
+            border-color: #dc2626;
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success-icon {
+            width: 60px;
+            height: 60px;
+            background: #10b981;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 28px;
+        }
+
+        .password-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div id="createUserFormSection">
+                <div class="login-header">
+                    <h2>Create New User</h2>
+                    <p>Add a new user to the system</p>
+                </div>
+
+                <form id="createUserForm" novalidate>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <div class="input-wrapper">
+                                <input type="text" id="fname" placeholder=" " required>
+                                <label for="fname">First Name</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-wrapper">
+                                <input type="text" id="lname" placeholder=" " required>
+                                <label for="lname">Last Name</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input type="email" id="email" placeholder=" " required>
+                            <label for="email">Work Email</label>
+                        </div>
+                        <span class="error-message" id="emailError">Please enter a valid work email</span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <select id="role" required>
+                                <option value="" disabled selected></option>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <label for="role">Role</label>
+                        </div>
+                        <span class="error-message" id="roleError">Please select a role</span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input type="password" id="password" placeholder=" " required>
+                            <label for="password">Password</label>
+                        </div>
+                        <div class="password-hint">Must be at least 8 characters with a number.</div>
+                        <span class="error-message" id="passError">Password is too weak</span>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="input-wrapper">
+                            <input type="password" id="confirmPassword" placeholder=" " required>
+                            <label for="confirmPassword">Confirm Password</label>
+                        </div>
+                        <span class="error-message" id="confirmError">Passwords do not match</span>
+                    </div>
+
+                    <button type="submit" class="signup-btn">Create User</button>
+                </form>
+            </div>
+
+            <div class="success-message" id="successMessage">
+                <div class="success-icon">✓</div>
+                <h3>User Created!</h3>
+                <p>The new user has been added to the system.</p>
+                <button class="signup-btn" style="margin-top: 20px;" onclick="location.reload()">Create Another</button>
+            </div>
+
+            <div class="login-link">
+                <a href="/admin">Back to Admin</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const createUserForm = document.getElementById('createUserForm');
+    const fnameInput = document.getElementById('fname');
+    const lnameInput = document.getElementById('lname');
+    const emailInput = document.getElementById('email');
+    const roleInput = document.getElementById('role');
+    const passwordInput = document.getElementById('password');
+    const confirmInput = document.getElementById('confirmPassword');
+
+    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    createUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        let valid = true;
+
+        document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.form-group').forEach(el => el.classList.remove('error'));
+
+        if (!isValidEmail(emailInput.value)) {
+            document.getElementById('emailError').style.display = 'block';
+            emailInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
+
+        if (!roleInput.value) {
+            document.getElementById('roleError').style.display = 'block';
+            roleInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
+
+        if (passwordInput.value.length < 8) {
+            document.getElementById('passError').style.display = 'block';
+            passwordInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
+
+        if (passwordInput.value !== confirmInput.value) {
+            document.getElementById('confirmError').style.display = 'block';
+            confirmInput.parentElement.parentElement.classList.add('error');
+            valid = false;
+        }
+
+        if (valid) {
+            try {
+                const response = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: emailInput.value,
+                        password: passwordInput.value,
+                        first_name: fnameInput.value,
+                        last_name: lnameInput.value,
+                        role: roleInput.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('createUserFormSection').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+                } else {
+                    document.getElementById('passError').textContent = data.error || "Failed to create user";
+                    document.getElementById('passError').style.display = 'block';
+                    passwordInput.parentElement.parentElement.classList.add('error');
+                }
+            } catch (error) {
+                document.getElementById('passError').textContent = "Network error";
+                document.getElementById('passError').style.display = 'block';
+                passwordInput.parentElement.parentElement.classList.add('error');
+            }
+        }
+    });
+
+    document.querySelectorAll('input, select').forEach(input => {
+        input.addEventListener('input', () => {
+            input.parentElement.parentElement.classList.remove('error');
+            const error = input.parentElement.parentElement.querySelector('.error-message');
+            if(error) error.style.display = 'none';
+        });
+    });
+</script>
+</body>
+</html>
