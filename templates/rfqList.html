@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RFQ List</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -38,13 +39,14 @@
             gap: 12px;
         }
         
-        .nav-links a {
+        .nav-links a, .btn-export {
             text-decoration: none;
             padding: 8px 16px;
             border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
             transition: all 0.15s;
+            cursor: pointer;
         }
         
         .btn-new {
@@ -54,6 +56,16 @@
         
         .btn-new:hover {
             background: #0052a3;
+        }
+
+        .btn-export {
+            background: #217346;
+            color: white;
+            border: none;
+        }
+
+        .btn-export:hover {
+            background: #1a5a37;
         }
         
         .btn-logout {
@@ -249,12 +261,83 @@
             color: #999;
             font-size: 14px;
         }
+
+        .search-container {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.15s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+
+        .search-input::placeholder {
+            color: #999;
+        }
+
+        .search-btn {
+            padding: 10px 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .search-btn:hover {
+            background: #0052a3;
+        }
+
+        .search-clear {
+            padding: 10px 16px;
+            background: #f5f5f5;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.15s;
+        }
+
+        .search-clear:hover {
+            background: #e5e5e5;
+        }
+
+        .search-results-info {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>RFQ Tracking History</h1>
         <div class="nav-links">
+            <button onclick="exportToExcel()" class="btn-export">📊 Export to Excel</button>
+            {% if user.role == 'admin' %}
+            <a href="/admin" class="btn-new" style="background: #28a745; margin-right: 12px;">Admin Panel</a>
+            {% endif %}
             <a href="/rfq-entry" class="btn-new">+ New RFQ</a>
             <a href="/logout" class="btn-logout">Logout</a>
         </div>
@@ -262,6 +345,19 @@
 
     <div class="container">
         <div class="card">
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" 
+                           id="searchInput" 
+                           class="search-input" 
+                           placeholder="Search by RFQ number, company, customer, email, purpose, or sales person..."
+                           autocomplete="off"
+                           onkeypress="handleSearchKeyPress(event)">
+                    <button class="search-btn" onclick="performSearch()">🔍 Search</button>
+                    <button class="search-clear" onclick="clearSearch()">Clear</button>
+                </div>
+                <div class="search-results-info" id="searchInfo"></div>
+            </div>
             <table id="rfqTable">
                 <thead>
                     <tr>
@@ -282,7 +378,71 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', fetchRFQs);
+        let rfqData = []; // Global variable to store fetched data for export
+        let filteredData = []; // Filtered data for display
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchRFQs();
+            setupSearch();
+        });
+
+        function setupSearch() {
+            // Remove real-time search, now using button-based search
+        }
+
+        function handleSearchKeyPress(event) {
+            // Allow Enter key to trigger search
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value;
+            filterTable(searchTerm);
+        }
+
+        function filterTable(searchTerm) {
+            if (!searchTerm.trim()) {
+                filteredData = rfqData;
+                renderTable(filteredData);
+                document.getElementById('searchInfo').textContent = '';
+                return;
+            }
+
+            const term = searchTerm.toLowerCase().trim();
+            filteredData = rfqData.filter(rfq => {
+                // Search across multiple fields - convert to strings to handle numbers/null
+                const rfqNo = String(rfq['RFQ-no'] || '').toLowerCase();
+                const company = String(rfq.Company_name || '').toLowerCase();
+                const customerName = String(rfq.Customer_name || '').toLowerCase();
+                const customerEmail = String(rfq.Customer_email || '').toLowerCase();
+                const purpose = String(rfq.RFQ_purpose || '').toLowerCase();
+                const salesPerson = String(rfq.Sales_person || '').toLowerCase();
+                
+                return rfqNo.includes(term) ||
+                       company.includes(term) ||
+                       customerName.includes(term) ||
+                       customerEmail.includes(term) ||
+                       purpose.includes(term) ||
+                       salesPerson.includes(term);
+            });
+
+            renderTable(filteredData);
+            
+            // Update search info
+            const info = document.getElementById('searchInfo');
+            if (filteredData.length === rfqData.length) {
+                info.textContent = '';
+            } else {
+                info.textContent = `Showing ${filteredData.length} of ${rfqData.length} RFQs`;
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filterTable('');
+        }
 
         async function fetchRFQs() {
             try {
@@ -291,7 +451,9 @@
                 document.getElementById('loader').style.display = 'none';
 
                 if (result.success) {
-                    renderTable(result.data);
+                    rfqData = result.data; // Store for export
+                    filteredData = rfqData; // Initialize filtered data
+                    renderTable(filteredData);
                 }
             } catch (err) {
                 document.getElementById('loader').innerText = "Failed to load data.";
@@ -405,6 +567,60 @@
             if (!confirm("Are you sure you want to delete this RFQ?")) return;
             const res = await fetch(`/api/delete-rfq/${id}`, { method: 'DELETE' });
             if (res.ok) fetchRFQs();
+        }
+
+        function exportToExcel() {
+            // Export filtered data if search is active, otherwise all data
+            const dataToExport = document.getElementById('searchInput').value.trim() ? filteredData : rfqData;
+            
+            if (dataToExport.length === 0) {
+                alert("No data available to export.");
+                return;
+            }
+
+            // Prepare flattened data for Excel (Main info + Part details)
+            const exportData = [];
+            dataToExport.forEach(rfq => {
+                if (rfq.Part_details && rfq.Part_details.length > 0) {
+                    rfq.Part_details.forEach(part => {
+                        exportData.push({
+                            "Date": new Date(rfq.created_at).toLocaleDateString(),
+                            "RFQ No": rfq['RFQ-no'],
+                            "Company": rfq.Company_name,
+                            "Customer Name": rfq.Customer_name,
+                            "Customer Email": rfq.Customer_email,
+                            "Purpose": rfq.RFQ_purpose,
+                            "Sales Person": rfq.Sales_person,
+                            "Part No": part['RFQ-part-no'],
+                            "Quoted Part No": part['Quoted-part-no'],
+                            "Supplier": part['Supplier'],
+                            "Qty": part['RFQ Qty'],
+                            "Unit Price ($)": part['Unit$'],
+                            "Unit Price (₹)": part['Unit₹'],
+                            "Margin (%)": part['Margin'],
+                            "Resale (₹)": part['Resale'],
+                            "Remarks": part['Remarks']
+                        });
+                    });
+                } else {
+                    // Export main RFQ even if no parts exist
+                    exportData.push({
+                        "Date": new Date(rfq.created_at).toLocaleDateString(),
+                        "RFQ No": rfq['RFQ-no'],
+                        "Company": rfq.Company_name,
+                        "Customer Name": rfq.Customer_name,
+                        "Sales Person": rfq.Sales_person
+                    });
+                }
+            });
+
+            // Create Worksheet
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "RFQs");
+
+            // Download file
+            XLSX.writeFile(workbook, `RFQ_History_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
     </script>
 </body>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFQ Reports</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        
+        .btn-primary {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0052a3;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #666;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 40px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0066cc;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #fafafa;
+            color: #666;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .loader-container {
+            padding: 60px 20px;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>RFQ Reports</h1>
+        <div class="nav-links">
+            <a href="/admin" class="btn-secondary">Back to Admin</a>
+            <a href="/logout" class="btn-secondary">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">RFQ Summary Statistics</h2>
+            </div>
+            <div class="stats-grid" id="statsGrid">
+                <div class="loader-container">Loading statistics...</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Recent RFQs</h2>
+            </div>
+            <table id="recentTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>RFQ No</th>
+                        <th>Company</th>
+                        <th>Sales Person</th>
+                        <th>Items</th>
+                    </tr>
+                </thead>
+                <tbody id="recentBody"></tbody>
+            </table>
+            <div id="loader" class="loader-container">Loading recent RFQs...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchReportData();
+        });
+
+        async function fetchReportData() {
+            try {
+                const response = await fetch('/api/list-rfq-entry');
+                const result = await response.json();
+
+                if (result.success) {
+                    renderStats(result.data);
+                    renderRecentTable(result.data);
+                }
+            } catch (err) {
+                document.getElementById('loader').innerText = "Failed to load data.";
+            }
+        }
+
+        function renderStats(data) {
+            const totalRFQs = data.length;
+            const totalItems = data.reduce((sum, rfq) => sum + (rfq.Part_details ? rfq.Part_details.length : 0), 0);
+            const uniqueCompanies = new Set(data.map(rfq => rfq.Company_name)).size;
+            const uniqueSales = new Set(data.map(rfq => rfq.Sales_person)).size;
+
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalRFQs}</div>
+                    <div class="stat-label">Total RFQs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${totalItems}</div>
+                    <div class="stat-label">Total Items</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${uniqueCompanies}</div>
+                    <div class="stat-label">Companies</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${uniqueSales}</div>
+                    <div class="stat-label">Sales People</div>
+                </div>
+            `;
+
+            document.getElementById('statsGrid').innerHTML = statsHtml;
+        }
+
+        function renderRecentTable(data) {
+            document.getElementById('loader').style.display = 'none';
+            const body = document.getElementById('recentBody');
+            
+            const recentData = data.slice(0, 10); // Show last 10
+            
+            body.innerHTML = '';
+
+            recentData.forEach(rfq => {
+                const row = document.createElement('tr');
+                
+                const dateStr = new Date(rfq.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+
+                row.innerHTML = `
+                    <td>${dateStr}</td>
+                    <td>${rfq['RFQ-no'] || 'N/A'}</td>
+                    <td>${rfq.Company_name}</td>
+                    <td>${rfq.Sales_person}</td>
+                    <td>${rfq.Part_details ? rfq.Part_details.length : 0}</td>
+                `;
+                body.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -265,7 +265,8 @@
             <div class="success-message" id="successMessage">
                 <div class="success-icon">✓</div>
                 <h3>User Created!</h3>
-                <p>The new user has been added to the system.</p>
+                <p>The new user has been added to the system with default permissions.</p>
+                <p><small>If you selected a specific role, you may need to adjust it through the Admin Panel after creation.</small></p>
                 <button class="signup-btn" style="margin-top: 20px;" onclick="location.reload()">Create Another</button>
             </div>
 
@@ -334,12 +335,18 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    // Check if there's a warning message about role
+                    if (data.message && data.message.includes("role could not be set")) {
+                        alert("User created successfully, but there was a warning: " + data.message);
+                    }
                     document.getElementById('createUserFormSection').style.display = 'none';
                     document.getElementById('successMessage').style.display = 'block';
                 } else {
-                    document.getElementById('passError').textContent = data.error || "Failed to create user";
+                    const errorMsg = data.error || "Failed to create user";
+                    document.getElementById('passError').textContent = errorMsg;
                     document.getElementById('passError').style.display = 'block';
                     passwordInput.parentElement.parentElement.classList.add('error');
+                    console.error("Signup error:", errorMsg);
                 }
             } catch (error) {
                 document.getElementById('passError').textContent = "Network error";

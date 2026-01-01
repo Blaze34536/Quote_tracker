@@ -136,6 +136,11 @@
             color: #0066cc;
         }
 
+        .status-sales {
+            background: #fff7e6;
+            color: #d46b08;
+        }
+
         .action-btns {
             display: flex;
             gap: 8px;
@@ -266,6 +271,7 @@
     <div class="header">
         <h1>Admin Panel</h1>
         <div class="nav-links">
+            <a href="/report" class="btn-primary">Reports</a>
             <a href="/make-user" class="btn-primary">+ Create User</a>
             <a href="/rfq-list" class="btn-secondary">RFQ List</a>
             <a href="/logout" class="btn-secondary">Logout</a>
@@ -311,6 +317,7 @@
                     <select id="editRole" required>
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
+                        <option value="sales">Sales</option>
                     </select>
                 </div>
                 <div class="modal-actions">
@@ -359,7 +366,7 @@
                     year: 'numeric'
                 });
 
-                const roleClass = user.role === 'admin' ? 'status-admin' : '';
+                const roleClass = user.role === 'admin' ? 'status-admin' : user.role === 'sales' ? 'status-sales' : '';
 
                 row.innerHTML = `
                     <td>${user.first_name} ${user.last_name}</td>
