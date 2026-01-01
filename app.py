@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from flask_wtf.csrf import CSRFProtect
 from src.config import Config
-from src.auth.utils import login_required, get_current_user
+from src.auth.utils import login_required, get_current_user, role_required
 from src.SupaClient import get_supabase
 from src.api import api
 
@@ -12,7 +12,7 @@ app.register_blueprint(api)
 csrf.exempt(api)
 
 @app.route("/rfq-entry")
-@login_required
+@role_required("admin")
 def rfq(user):
     return render_template("rfqeditor.html") 
 
@@ -28,12 +28,12 @@ def login():
         return redirect(url_for('rfq'))
     return render_template("login.html")
 
-@app.route("/signup")
+@app.route("/make-user")
 def signup():
     user = get_current_user()
     if user:
         return redirect(url_for('rfq'))
-    return render_template("signup.html")
+    return render_template("makeUser.html")
 
 @app.route("/logout")
 @login_required

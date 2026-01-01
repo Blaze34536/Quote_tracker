@@ -117,30 +117,43 @@ def delete_rfq(user, rfq_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@api.route('/signup', methods=['POST'])
-def signup(user):
-    data = request.get_json()
+@api.route("/signup", methods=["POST"])
+def signup():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+
     supabase = get_supabase()
+
     try:
-        # Create user in Supabase Auth
-        auth_res = supabase.auth.admin.create_user({
-            "email": data['email'],
-            "password": data['password'],
-            "email_confirm": True
+        # 1. Sign up the user in Supabase Auth
+        auth_res = supabase.auth.sign_up({
+            "email": email,
+            "password": password
         })
-        
+
         if auth_res.user:
-            # Create profile
-            profile_data = {
-                "user_id": auth_res.user.id,
-                "first_name": data.get('first_name', ''),
-                "last_name": data.get('last_name', ''),
-                "role": data.get('role', 'user')
-            }
-            supabase.table("profiles").insert(profile_data).execute()
+            user_id = auth_res.user.id
             
-        return jsonify({"success": True}), 201
+            # 2. Create the profile row in the 'profiles' table
+            # This prevents the PGRST116 error later when they try to log in
+            profile_data = {
+                "user_id": user_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "role": "user"  # Default role
+            }
+            
+            profile_res = supabase.table("profiles").insert(profile_data).execute()
+            
+            return jsonify({"message": "Signup successful", "user": auth_res.user.id}), 200
+        else:
+            return jsonify({"error": "Signup failed"}), 400
+
     except Exception as e:
+        print(f"Signup error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @api.route('/login', methods=['POST'])
