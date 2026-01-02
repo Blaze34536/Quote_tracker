@@ -5,40 +5,196 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RFQ Entry - Professional</title>
     <style>
-        :root {
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --border-color: #dee2e6;
-            --primary-blue: #1a73e8;
-            --success-green: #28a745;
-            --danger-red: #dc3545;
-            --label-color: #5f6368;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; font-size: 13px; }
+        :root {
+            --bg-color: #fafafa;
+            --card-bg: #ffffff;
+            --border-color: #e5e5e5;
+            --primary-blue: #0066cc;
+            --success-green: #28a745;
+            --danger-red: #dc3545;
+            --label-color: #666;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            line-height: 1.5;
+        }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; color: #444; }
-        .nav-links { display: flex; gap: 15px; align-items: center; }
-        .nav-links a { color: var(--primary-blue); text-decoration: none; font-weight: 500; }
-        .user-name { color: #333; font-weight: 500; }
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-        .card { background: var(--card-bg); border-radius: 4px; border: 1px solid var(--border-color); padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .card-title { font-weight: bold; color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-
-        .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-        .col { display: flex; flex-direction: column; flex: 1; min-width: 80px; }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
         
-        label { color: var(--label-color); margin-bottom: 4px; font-size: 11px; font-weight: 600; }
-        input, select { border: 1px solid var(--border-color); padding: 6px 8px; border-radius: 3px; outline: none; font-size: 12px; width: 100%; box-sizing: border-box; }
-        input:focus { border-color: var(--primary-blue); }
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
 
-        /* Grid Layouts - No ID Column */
+        .btn-list {
+            background: white;
+            color: var(--primary-blue);
+            border: 1px solid #d9d9d9;
+        }
+
+        .btn-list:hover {
+            background: #f0f7ff;
+            border-color: var(--primary-blue);
+        }
+
+        .btn-logout {
+            background: white;
+            color: #666;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .btn-logout:hover {
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 40px;
+        }
+
+        .card { 
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        
+        .card-title { 
+            font-weight: 600;
+            font-size: 15px;
+            color: #1a1a1a;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .col { display: flex; flex-direction: column; flex: 1; min-width: 120px; }
+        
+        label { 
+            color: var(--label-color);
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        input, select { 
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
+            width: 100%;
+            transition: border-color 0.15s;
+        }
+        
+        input:focus, select:focus { 
+            border-color: var(--primary-blue);
+        }
+
+        /* Grid Layouts */
         .parts-row { display: grid; grid-template-columns: repeat(8, 1fr) 35px; gap: 8px; align-items: end; margin-bottom: 8px; }
         .pricing-row { display: grid; grid-template-columns: 100px repeat(11, 1fr) 2fr; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
         
-        .btn-add { background-color: var(--success-green); color: white; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-save { background-color: var(--primary-blue); color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-weight: bold; float: right; }
-        .btn-remove { background-color: var(--danger-red); color: white; border: none; border-radius: 4px; cursor: pointer; height: 28px; width: 30px; font-weight: bold; }
+        .btn-add { 
+            background-color: var(--success-green);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            margin-top: 12px;
+            transition: all 0.15s;
+        }
+
+        .btn-add:hover {
+            background-color: #218838;
+        }
+        
+        .btn-save { 
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            float: right;
+            transition: all 0.15s;
+        }
+
+        .btn-save:hover {
+            background-color: #0052a3;
+        }
+
+        .btn-reset {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            float: right;
+            margin-right: 12px;
+            transition: all 0.15s;
+        }
+
+        .btn-reset:hover {
+            background-color: #5a6268;
+        }
+        
+        .btn-remove { 
+            background-color: var(--danger-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            height: 28px;
+            width: 30px;
+            font-weight: bold;
+        }
 
         .status-footer { margin-top: 30px; overflow: hidden; }
     </style>
@@ -46,85 +202,86 @@
 <body>
 
     <div class="header">
-        <div><strong id="pageTitle">RFQ Entry</strong></div>
+        <h1 id="pageTitle">New RFQ Entry</h1>
         <div class="nav-links">
-            <span class="user-name"></span>
-            <a href="/rfq-list">RFQ List</a>
-            <a href="/logout">Logout</a>
+            <a href="/rfq-list" class="btn-list">📋 RFQ List</a>
+            <a href="/logout" class="btn-logout">Logout</a>
         </div>
     </div>
 
-    <div class="card">
-        <div class="row">
-            <div class="col" style="max-width: 150px;">
-                <label>Date</label>
-                <input type="date" id="rfq_date">
-            </div>
-            <div class="col" style="max-width: 150px;">
-                <label>RFQ Purpose</label>
-                <select id="rfq_purpose" onchange="handlePurposeChange()">
-                  <option value="">Select</option>
-                  <option value="Bidding">Bidding</option>
-                  <option value="Buying">Buying</option>
-                </select>
-            </div>
-            <div class="col" style="max-width: 180px;">
-                <label>Tentative Buying Date <span id="date_required" style="color: var(--danger-red); display: none;">*</span></label>
-                <input type="date" id="tentative_date">
+    <div class="container">
+        <div class="card">
+            <div class="row">
+                <div class="col" style="max-width: 150px;">
+                    <label>Date</label>
+                    <input type="date" id="rfq_date">
+                </div>
+                <div class="col" style="max-width: 150px;">
+                    <label>RFQ Purpose</label>
+                    <select id="rfq_purpose" onchange="handlePurposeChange()">
+                      <option value="">Select</option>
+                      <option value="Bidding">Bidding</option>
+                      <option value="Buying">Buying</option>
+                    </select>
+                </div>
+                <div class="col" style="max-width: 180px;">
+                    <label>Tentative Date <span id="date_required" style="color: var(--danger-red); display: none;">*</span></label>
+                    <input type="date" id="tentative_date">
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-title">Sales & Customer</div>
-        <div class="row">
-            <div class="col"><label>RFQ No</label><input type="text" id="rfq_no"></div>
-            <div class="col"><label>Company Name</label><input type="text" id="company_name"></div>
-            <div class="col">
-                <label>Sales Person</label>
-                <select id="sales_person">
-                  <option value="">Select</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                </select>
+        <div class="card">
+            <div class="card-title">Sales & Customer</div>
+            <div class="row">
+                <div class="col"><label>RFQ No</label><input type="text" id="rfq_no"></div>
+                <div class="col"><label>Company Name</label><input type="text" id="company_name"></div>
+                <div class="col">
+                    <label>Sales Person</label>
+                    <select id="sales_person">
+                      <option value="">Select</option>
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                    </select>
+                </div>
+                <div class="col"><label>Customer Name</label><input type="text" id="customer_name"></div>
             </div>
-            <div class="col"><label>Customer Name</label><input type="text" id="customer_name"></div>
-        </div>
-        <div class="row">
-            <div class="col"><label>Customer Email</label><input type="email" id="customer_email"></div>
-            <div class="col"><label>Customer Phone</label><input type="tel" id="customer_phone"></div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Part Details</div>
-        <div id="partsContainer">
-            <div class="parts-row" style="margin-bottom: 5px;">
-                <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
-                <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
-                <label>Make</label><label>Lead</label>
-                <div></div>
+            <div class="row">
+                <div class="col"><label>Customer Email</label><input type="email" id="customer_email"></div>
+                <div class="col"><label>Customer Phone</label><input type="tel" id="customer_phone"></div>
             </div>
         </div>
-        <button type="button" class="btn-add" onclick="addLinkedRow()">+ Add Part</button>
-    </div>
 
-    <div class="card">
-        <div class="card-title">Pricing (Per Part)</div>
-        <div id="pricingContainer">
-            <div class="pricing-row" style="margin-bottom: 5px;">
-                <label>Source</label>
-                <label>Unit $</label><label>Exch</label><label>Unit ₹</label>
-                <label>Freight</label><label>Insur.</label><label>BCD</label>
-                <label>Bank</label><label>Clear.</label><label>Margin</label>
-                <label>Resale</label><label>TP</label><label>Remarks</label>
+        <div class="card">
+            <div class="card-title">Part Details</div>
+            <div id="partsContainer">
+                <div class="parts-row" style="margin-bottom: 5px;">
+                    <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
+                    <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
+                    <label>Make</label><label>Lead</label>
+                    <div></div>
+                </div>
+            </div>
+            <button type="button" class="btn-add" onclick="addLinkedRow()">+ Add Part</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Pricing (Per Part)</div>
+            <div id="pricingContainer">
+                <div class="pricing-row" style="margin-bottom: 5px;">
+                    <label>Source</label>
+                    <label>Unit $</label><label>Exch</label><label>Unit ₹</label>
+                    <label>Freight</label><label>Insur.</label><label>BCD</label>
+                    <label>Bank</label><label>Clear.</label><label>Margin</label>
+                    <label>Resale</label><label>TP</label><label>Remarks</label>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="status-footer">
-        <button class="btn-save" onclick="saveRFQ()">Save RFQ</button>
-        <button class="btn-save" onclick="resetForm()" style="background-color: #6c757d; margin-right: 10px;">Reset</button>
+        <div class="status-footer">
+            <button class="btn-save" onclick="saveRFQ()">Save RFQ</button>
+            <button class="btn-reset" onclick="resetForm()">Reset</button>
+        </div>
     </div>
 
     <script>
@@ -171,17 +328,6 @@
             const clearance = priceRow.querySelector('.clearance');
             
             if (source === 'Local') {
-                // For Local: Disable USD (make it calculated), Enable INR input
-                /* COMMENTED OUT - No longer converting back to USD for local
-                usdField.readOnly = true;
-                usdField.style.backgroundColor = '#f8f9fa';
-                inrField.readOnly = false;
-                inrField.style.backgroundColor = '';
-                inrField.setAttribute('oninput', `calculateUSD(${rowId})`);
-                exchField.setAttribute('oninput', `calculateUSD(${rowId})`);
-                */
-                
-                // For Local: Just enter INR directly, no conversion needed
                 usdField.readOnly = true;
                 usdField.style.backgroundColor = '#f8f9fa';
                 usdField.value = '';
@@ -192,7 +338,6 @@
                 exchField.readOnly = true;
                 exchField.style.backgroundColor = '#f8f9fa';
                 
-                // Disable import-related fields
                 insurance.disabled = true;
                 bcd.disabled = true;
                 bank.disabled = true;
@@ -206,7 +351,6 @@
                 bank.style.backgroundColor = '#e9ecef';
                 clearance.style.backgroundColor = '#e9ecef';
             } else if (source === 'Import') {
-                // For Import: Enable USD input, Disable INR (make it calculated)
                 usdField.readOnly = false;
                 usdField.style.backgroundColor = '';
                 inrField.readOnly = true;
@@ -216,7 +360,6 @@
                 exchField.style.backgroundColor = '';
                 exchField.setAttribute('oninput', `calculateINR(${rowId})`);
                 
-                // Enable import-related fields
                 insurance.disabled = false;
                 bcd.disabled = false;
                 bank.disabled = false;
@@ -281,24 +424,6 @@
             }
         }
 
-        /* COMMENTED OUT - No longer converting back to USD for local source
-        function calculateUSD(id) {
-            const sourceSelect = document.getElementById(`source-${id}`);
-            const source = sourceSelect ? sourceSelect.value : '';
-            if (source !== 'Local') return;
-            
-            const inr = document.getElementById(`inr-${id}`).value;
-            const exch = document.getElementById(`exch-${id}`).value;
-            const usdField = document.getElementById(`usd-${id}`);
-            
-            if (inr && exch) {
-                usdField.value = (parseFloat(inr) / parseFloat(exch)).toFixed(4);
-            } else {
-                usdField.value = "";
-            }
-        }
-        */
-
         function addLinkedRow(data = null) {
             rowCount++;
             
@@ -350,7 +475,6 @@
             `;
             prContainer.appendChild(prRow);
             
-            // Apply source restrictions based on data
             if (data && data['Source']) {
                 handleSourceChange(rowCount);
             }
@@ -371,57 +495,58 @@
         }
 
         async function saveRFQ() {
-    const purpose = document.getElementById('rfq_purpose').value;
-    const tentativeDate = document.getElementById('tentative_date').value;
-    
-    if (purpose === 'Bidding' && !tentativeDate) {
-        alert("Tentative Buying Date is required for Bidding purpose.");
-        return;
-    }
-    
-    const rfqData = {
-        id: currentRfqId,
-        rfq_no: document.getElementById('rfq_no').value,
-        company_name: document.getElementById('company_name').value,
-        sales_person: document.getElementById('sales_person').value,
-        customer_name: document.getElementById('customer_name').value,
-        customer_email: document.getElementById('customer_email').value,
-        customer_phone: document.getElementById('customer_phone').value,
-        rfq_purpose: purpose,
-        tentative_date: tentativeDate,
-        items: []
-    };
+            const purpose = document.getElementById('rfq_purpose').value;
+            const tentativeDate = document.getElementById('tentative_date').value;
+            
+            if (purpose === 'Bidding' && !tentativeDate) {
+                alert("Tentative Buying Date is required for Bidding purpose.");
+                return;
+            }
+            
+            const rfqData = {
+                id: currentRfqId,
+                rfq_no: document.getElementById('rfq_no').value,
+                company_name: document.getElementById('company_name').value,
+                sales_person: document.getElementById('sales_person').value,
+                customer_name: document.getElementById('customer_name').value,
+                customer_email: document.getElementById('customer_email').value,
+                customer_phone: document.getElementById('customer_phone').value,
+                rfq_purpose: purpose,
+                tentative_date: tentativeDate,
+                items: []
+            };
 
-    const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
-    partRows.forEach((partRow) => {
-        const rowId = partRow.id.split('-')[2];
-        const priceRow = document.getElementById(`price-row-${rowId}`);
-        const sourceSelect = document.getElementById(`source-${rowId}`);
-        
-        const item = {
-            rfq_part_no: partRow.querySelector('.rfq_part_no').value,
-            quoted_part_no: partRow.querySelector('.quoted_part_no').value,
-            supplier: partRow.querySelector('.supplier').value,
-            date_code: partRow.querySelector('.date_code').value,
-            rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
-            quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
-            make: partRow.querySelector('.make').value,
-            lead_time: partRow.querySelector('.lead_time').value,
-            source: sourceSelect ? sourceSelect.value : '',
-            unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${rowId}`).value) || 0,
-            unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${rowId}`).value) || 0,
-            freight: parseFloat(priceRow.querySelector('.freight').value) || 0,
-            insurance: parseFloat(priceRow.querySelector('.insurance').value) || 0,
-            bcd: parseFloat(priceRow.querySelector('.bcd').value) || 0,
-            bank: parseFloat(priceRow.querySelector('.bank').value) || 0,
-            clearance: parseFloat(priceRow.querySelector('.clearance').value) || 0,
-            margin: parseFloat(priceRow.querySelector('.margin').value) || 0,
-            resale: parseFloat(priceRow.querySelector('.resale').value) || 0,
-            tp: priceRow.querySelector('.tp').value,
-            remarks: priceRow.querySelector('.remarks').value
-        };
-        rfqData.items.push(item);
-        });
+            const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
+            partRows.forEach((partRow) => {
+                const rowId = partRow.id.split('-')[2];
+                const priceRow = document.getElementById(`price-row-${rowId}`);
+                const sourceSelect = document.getElementById(`source-${rowId}`);
+                
+                const item = {
+                    rfq_part_no: partRow.querySelector('.rfq_part_no').value,
+                    quoted_part_no: partRow.querySelector('.quoted_part_no').value,
+                    supplier: partRow.querySelector('.supplier').value,
+                    date_code: partRow.querySelector('.date_code').value,
+                    rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
+                    quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
+                    make: partRow.querySelector('.make').value,
+                    lead_time: partRow.querySelector('.lead_time').value,
+                    source: sourceSelect ? sourceSelect.value : '',
+                    unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${rowId}`).value) || 0,
+                    unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${rowId}`).value) || 0,
+                    freight: parseFloat(priceRow.querySelector('.freight').value) || 0,
+                    insurance: parseFloat(priceRow.querySelector('.insurance').value) || 0,
+                    bcd: parseFloat(priceRow.querySelector('.bcd').value) || 0,
+                    bank: parseFloat(priceRow.querySelector('.bank').value) || 0,
+                    clearance: parseFloat(priceRow.querySelector('.clearance').value) || 0,
+                    margin: parseFloat(priceRow.querySelector('.margin').value) || 0,
+                    resale: parseFloat(priceRow.querySelector('.resale').value) || 0,
+                    tp: priceRow.querySelector('.tp').value,
+                    remarks: priceRow.querySelector('.remarks').value
+                };
+                rfqData.items.push(item);
+            });
+
             try {
                 const response = await fetch('/api/make-rfq-entry', {
                     method: 'POST',
@@ -455,7 +580,6 @@
                 document.getElementById('rfq_date').valueAsDate = new Date();
                 document.getElementById('date_required').style.display = 'none';
                 
-                // Clear all parts and pricing rows
                 document.getElementById('partsContainer').innerHTML = `
                     <div class="parts-row" style="margin-bottom: 5px;">
                         <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
