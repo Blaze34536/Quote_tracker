@@ -14,7 +14,7 @@ csrf.exempt(api)
 @app.route("/rfq-entry")
 @role_required("admin", "sales")
 def rfq(user):
-    return render_template("rfqeditor.html") 
+    return render_template("rfqEditor.html") 
 
 @app.route("/")
 @login_required
@@ -61,9 +61,3 @@ def rfq_list(user):
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-with app.app_context():
-    print("\n--- Registered Routes ---")
-    for rule in app.url_map.iter_rules():
-        print(f"Endpoint: {rule.endpoint:20} Route: {rule}")
-    print("------------------------\n")
