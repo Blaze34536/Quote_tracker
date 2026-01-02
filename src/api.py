@@ -412,8 +412,80 @@ def list_users(user):
     
     supabase = get_supabase_admin()
     try:
+        # Get profiles
         res = supabase.table("profiles").select("*").execute()
-        return jsonify({"success": True, "data": res.data}), 200
+        profiles = res.data
+        
+        # Get email addresses from auth for each user
+        auth_users = {}
+        try:
+            # Get all users from auth
+            auth_users_res = supabase.auth.admin.list_users()
+            
+            # Debug: Check what we actually got
+            print(f"Auth response type: {type(auth_users_res)}")
+            
+            # The response might be a list directly, or have a .users attribute
+            users_list = None
+            if isinstance(auth_users_res, list):
+                users_list = auth_users_res
+                print(f"Response is a list with {len(users_list)} items")
+            elif hasattr(auth_users_res, 'users'):
+                users_list = auth_users_res.users
+                print(f"Response has .users attribute, type: {type(users_list)}")
+            elif hasattr(auth_users_res, 'data'):
+                users_list = auth_users_res.data
+                print(f"Response has .data attribute")
+            else:
+                # Try to get it as an iterable
+                try:
+                    users_list = list(auth_users_res)
+                    print(f"Converted response to list")
+                except:
+                    print(f"Could not convert response. Attributes: {[x for x in dir(auth_users_res) if not x.startswith('_')]}")
+                    users_list = []
+            
+            # Build email mapping
+            if users_list:
+                for user in users_list:
+                    try:
+                        # Try object attribute access first
+                        if hasattr(user, 'id'):
+                            user_id = str(user.id)
+                            user_email = getattr(user, 'email', None)
+                        # Then try dictionary access
+                        elif isinstance(user, dict):
+                            user_id = str(user.get('id', ''))
+                            user_email = user.get('email')
+                        else:
+                            continue
+                            
+                        if user_id and user_email:
+                            auth_users[user_id] = user_email
+                            print(f"Mapped user {user_id} -> {user_email}")
+                    except Exception as user_error:
+                        print(f"Error processing user: {user_error}")
+                        continue
+            else:
+                print("No users list found in response")
+                
+        except Exception as auth_error:
+            error_str = str(auth_error)
+            print(f"Warning: Could not fetch email addresses: {error_str}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+        
+        # Merge email addresses into profiles
+        for profile in profiles:
+            user_id = str(profile.get('user_id', '')) if profile.get('user_id') else None
+            if user_id and user_id in auth_users:
+                profile['email'] = auth_users[user_id]
+            else:
+                profile['email'] = None
+                if user_id:
+                    print(f"No email found for user_id: {user_id}")
+        
+        return jsonify({"success": True, "data": profiles}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
@@ -506,6 +578,10 @@ def delete_user(user, user_id):
     role, u_id = get_user_info(user)
     if role != "admin":
         return jsonify({"error": "Forbidden: Only admins can delete users"}), 403
+    
+    # Prevent users from deleting themselves
+    if u_id and str(u_id) == str(user_id):
+        return jsonify({"error": "You cannot delete your own account"}), 400
     
     supabase = get_supabase_admin()
     try:
