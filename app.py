@@ -59,6 +59,8 @@ def logout(user):
 def rfq_list(user):
     return render_template("rfqList.html", user=user)
 
+application = app
+
 if __name__ == "__main__":
     app.run(debug=True)
 
