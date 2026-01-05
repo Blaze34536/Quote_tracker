@@ -332,7 +332,10 @@
 </head>
 <body>
     <div class="header">
-        <h1>RFQ Tracking History</h1>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="/static/logo.webp" alt="Logo" height="40">
+            <h1>RFQ Tracking History</h1>
+        </div>
         <div class="nav-links">
             <button onclick="exportToExcel()" class="btn-export">📊 Export to Excel</button>
             {% if user.role == 'admin' %}
@@ -387,7 +390,7 @@
         });
 
         function setupSearch() {
-            // Remove real-time search, now using button-based search
+            // set up later based on requiremnets
         }
 
         function handleSearchKeyPress(event) {

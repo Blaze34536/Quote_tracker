@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFQ Entry - Professional</title>
+    <title>RFQ Entry</title>
     <style>
         * {
             margin: 0;
@@ -202,7 +202,10 @@
 <body>
 
     <div class="header">
-        <h1 id="pageTitle">New RFQ Entry</h1>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="/static/logo.webp" alt="Logo" height="40">
+            <h1 id="pageTitle">New RFQ Entry</h1>
+        </div>
         <div class="nav-links">
             <a href="/rfq-list" class="btn-list">📋 RFQ List</a>
             <a href="/logout" class="btn-logout">Logout</a>
@@ -236,14 +239,7 @@
             <div class="row">
                 <div class="col"><label>RFQ No</label><input type="text" id="rfq_no"></div>
                 <div class="col"><label>Company Name</label><input type="text" id="company_name"></div>
-                <div class="col">
-                    <label>Sales Person</label>
-                    <select id="sales_person">
-                      <option value="">Select</option>
-                      <option value="1">1</option>
-                      <option value="2">2</option>
-                    </select>
-                </div>
+                <div class="col"><label>Sales Person</label><input type="text" id="sales_person"></div>
                 <div class="col"><label>Customer Name</label><input type="text" id="customer_name"></div>
             </div>
             <div class="row">
@@ -427,7 +423,7 @@
         function addLinkedRow(data = null) {
             rowCount++;
             
-            let defaultExch = "83";
+            let defaultExch = "92";
             if (data && data['Unit$'] && data['Unit₹']) {
                 defaultExch = (data['Unit₹'] / data['Unit$']).toFixed(2);
             }
@@ -440,7 +436,7 @@
                 <input type="text" class="rfq_part_no" value="${data ? (data['RFQ-part-no'] || '') : ''}">
                 <input type="text" class="quoted_part_no" value="${data ? (data['Quoted-part-no'] || '') : ''}">
                 <input type="text" class="supplier" value="${data ? (data['Supplier'] || '') : ''}">
-                <input type="date" class="date_code" value="${data ? (data['Date Code'] || '') : ''}">
+                <input type="text" class="date_code" value="${data ? (data['Date Code'] || '') : ''}">
                 <input type="number" class="rfq_qty" value="${data ? (data['RFQ Qty'] || '') : ''}">
                 <input type="number" class="quoted_qty" value="${data ? (data['Quoted Qty'] || '') : ''}">
                 <input type="text" class="make" value="${data ? (data['Make'] || '') : ''}">
