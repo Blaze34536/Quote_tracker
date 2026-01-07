@@ -30,6 +30,12 @@ def make_entry(user):
             "Customer_name": data.get('customer_name'),
             "Customer_email": data.get('customer_email'),
             "Customer_phone": data.get('customer_phone'),
+            "Customer_address_1": data.get('customer_address_1'),
+            "Customer_address_2": data.get('customer_address_2'),
+            "Customer_city": data.get('customer_city'),
+            "Customer_state": data.get('customer_state'),
+            "Customer_pincode": data.get('customer_pincode'),
+            "Customer_country": data.get('customer_country'),
             "RFQ_purpose": data.get('rfq_purpose'),
             "Tentative_date": data.get('tentative_date') or None,
             "created_by": u_id
@@ -85,8 +91,8 @@ def list_entry(user):
         res = supabase.table("RFQ-Tracker").select('*, Part_details(*)').order("created_at", desc=True).execute()
         processed_data = res.data
         
-        # Mask sensitive info for Sales/Users
-        if role != "admin":
+        # Only hide sensitive info for sales/users - admin and pricing can see everything
+        if role not in ["admin", "pricing"]:
             sensitive_fields = ["Unit$", "Unit₹", "Margin", "BCD", "Freight", "Insurance", "Clearance"]
             for rfq in processed_data:
                 for part in rfq.get('Part_details', []):
@@ -112,8 +118,8 @@ def get_rfq(user, rfq_id):
         
         rfq_data = res.data[0]
         
-        # Mask sensitive info for Sales/Users
-        if role != "admin":
+        # Mask sensitive info for Sales/Users - admin and pricing can see everything
+        if role not in ["admin", "pricing"]:
             sensitive_fields = ["Unit$", "Unit₹", "Margin", "BCD", "Freight", "Insurance", "Clearance"]
             for part in rfq_data.get('Part_details', []):
                 for field in sensitive_fields:
@@ -276,19 +282,51 @@ def signup():
                                 print("RPC function not found - it may not have been created correctly")
                                 message = "User profile updated, but role could not be set. The database function may not exist. Please verify the SQL script was run correctly in Supabase."
                             else:
-                                # If RPC fails for other reasons, try direct update as last resort
+                                # Try the simple function as fallback
                                 try:
-                                    print("Trying direct update as fallback...")
-                                    supabase_admin.table("profiles").update({"role": role}).eq("user_id", u_id).execute()
-                                    role_set = True
-                                    message = "User profile updated successfully"
-                                except Exception as direct_error:
-                                    direct_error_str = str(direct_error)
-                                    print(f"Direct update also failed: {direct_error_str}")
-                                    if "Only administrators" in direct_error_str or "P0001" in direct_error_str:
-                                        message = "User profile updated, but role could not be set due to database trigger. The RPC function may not be working. Please check Supabase logs or update the role manually in admin panel."
+                                    print("Trying simple RPC function as fallback...")
+                                    rpc_result = supabase_admin.rpc("update_user_role_simple", {
+                                        "p_user_id": str(u_id),
+                                        "p_new_role": str(role)
+                                    }).execute()
+                                    print(f"Simple RPC call successful: {rpc_result}")
+                                    # Verify the role was actually set
+                                    verify_res = supabase_admin.table("profiles").select("role").eq("user_id", u_id).execute()
+                                    if verify_res.data and verify_res.data[0].get("role") == role:
+                                        print(f"Role verified successfully: {verify_res.data[0].get('role')}")
+                                        role_set = True
+                                        message = "User profile updated successfully"
                                     else:
-                                        message = f"User profile updated, but role could not be set: {direct_error_str}"
+                                        print(f"Warning: Simple RPC role verification failed")
+                                        # If simple RPC fails, try direct update as last resort
+                                        try:
+                                            print("Trying direct update as final fallback...")
+                                            supabase_admin.table("profiles").update({"role": role}).eq("user_id", u_id).execute()
+                                            role_set = True
+                                            message = "User profile updated successfully"
+                                        except Exception as direct_error:
+                                            direct_error_str = str(direct_error)
+                                            print(f"Direct update also failed: {direct_error_str}")
+                                            if "Only administrators" in direct_error_str or "P0001" in direct_error_str:
+                                                message = "User profile updated, but role could not be set due to database trigger. The RPC function may not be working. Please check Supabase logs or update the role manually in admin panel."
+                                            else:
+                                                message = f"User profile updated, but role could not be set: {direct_error_str}"
+                                except Exception as simple_rpc_error:
+                                    simple_rpc_error_str = str(simple_rpc_error)
+                                    print(f"Simple RPC function call also failed: {simple_rpc_error_str}")
+                                    # If simple RPC fails, try direct update as last resort
+                                    try:
+                                        print("Trying direct update as final fallback...")
+                                        supabase_admin.table("profiles").update({"role": role}).eq("user_id", u_id).execute()
+                                        role_set = True
+                                        message = "User profile updated successfully"
+                                    except Exception as direct_error:
+                                        direct_error_str = str(direct_error)
+                                        print(f"Direct update also failed: {direct_error_str}")
+                                        if "Only administrators" in direct_error_str or "P0001" in direct_error_str:
+                                            message = "User profile updated, but role could not be set due to database trigger. The RPC function may not be working. Please check Supabase logs or update the role manually in admin panel."
+                                        else:
+                                            message = f"User profile updated, but role could not be set: {direct_error_str}"
                     except Exception as role_error:
                         error_str_role = str(role_error)
                         print(f"Role update failed: {error_str_role}")

@@ -383,6 +383,7 @@
     <script>
         let rfqData = []; // Global variable to store fetched data for export
         let filteredData = []; // Filtered data for display
+        const role = "{{ role }}";
 
         document.addEventListener('DOMContentLoaded', function() {
             fetchRFQs();
@@ -508,7 +509,17 @@
                 detailRow.id = `details-${rfq.id}`;
                 detailRow.style.display = 'none';
                 
-                let partsHtml = (rfq.Part_details || []).map(p => `
+                let partsHtml = (rfq.Part_details || []).map(p => {
+                    if (role === 'sales') {
+                        return `
+                    <tr>
+                        <td>${p['RFQ-part-no']}</td>
+                        <td>${p['RFQ Qty']}</td>
+                        <td>₹${p['TP'] || '0.00'}</td>
+                    </tr>
+                `;
+                    } else {
+                        return `
                     <tr>
                         <td>${p['RFQ-part-no']}</td>
                         <td>${p['Quoted-part-no'] || '-'}</td>
@@ -520,24 +531,39 @@
                         <td><span class="resale-value">₹${p['Resale'] || '0.00'}</span></td>
                         <td>${p['Remarks'] || '-'}</td>
                     </tr>
-                `).join('');
+                `;
+                    }
+                }).join('');
+
+                let tableHeaders = '';
+                if (role === 'sales') {
+                    tableHeaders = `
+                        <th>Part #</th>
+                        <th>Qty</th>
+                        <th>TP</th>
+                    `;
+                } else {
+                    tableHeaders = `
+                        <th>Part #</th>
+                        <th>Quoted #</th>
+                        <th>Supplier</th>
+                        <th>Qty</th>
+                        <th>Unit $</th>
+                        <th>Unit ₹</th>
+                        <th>Margin</th>
+                        <th>Resale</th>
+                        <th>Remarks</th>
+                    `;
+                }
 
                 detailRow.innerHTML = `
-                    <td colspan="8" style="padding:0;">
+                    <td colspan="${role === 'sales' ? '3' : '8'}" style="padding:0;">
                         <div class="parts-container" id="cont-${rfq.id}">
                             <div class="parts-header">Pricing Details</div>
                             <table class="inner-table">
                                 <thead>
                                     <tr>
-                                        <th>Part #</th>
-                                        <th>Quoted #</th>
-                                        <th>Supplier</th>
-                                        <th>Qty</th>
-                                        <th>Unit $</th>
-                                        <th>Unit ₹</th>
-                                        <th>Margin</th>
-                                        <th>Resale</th>
-                                        <th>Remarks</th>
+                                        ${tableHeaders}
                                     </tr>
                                 </thead>
                                 <tbody>${partsHtml}</tbody>
@@ -586,7 +612,7 @@
             dataToExport.forEach(rfq => {
                 if (rfq.Part_details && rfq.Part_details.length > 0) {
                     rfq.Part_details.forEach(part => {
-                        exportData.push({
+                        const baseData = {
                             "Date": new Date(rfq.created_at).toLocaleDateString(),
                             "RFQ No": rfq['RFQ-no'],
                             "Company": rfq.Company_name,
@@ -594,16 +620,24 @@
                             "Customer Email": rfq.Customer_email,
                             "Purpose": rfq.RFQ_purpose,
                             "Sales Person": rfq.Sales_person,
-                            "Part No": part['RFQ-part-no'],
-                            "Quoted Part No": part['Quoted-part-no'],
-                            "Supplier": part['Supplier'],
-                            "Qty": part['RFQ Qty'],
-                            "Unit Price ($)": part['Unit$'],
-                            "Unit Price (₹)": part['Unit₹'],
-                            "Margin (%)": part['Margin'],
-                            "Resale (₹)": part['Resale'],
-                            "Remarks": part['Remarks']
-                        });
+                            "Part No": part['RFQ-part-no']
+                        };
+                        
+                        if (role === 'sales') {
+                            baseData["Qty"] = part['RFQ Qty'];
+                            baseData["TP (₹)"] = part['TP'];
+                        } else {
+                            baseData["Quoted Part No"] = part['Quoted-part-no'];
+                            baseData["Supplier"] = part['Supplier'];
+                            baseData["Qty"] = part['RFQ Qty'];
+                            baseData["Unit Price ($)"] = part['Unit$'];
+                            baseData["Unit Price (₹)"] = part['Unit₹'];
+                            baseData["Margin (%)"] = part['Margin'];
+                            baseData["Resale (₹)"] = part['Resale'];
+                            baseData["Remarks"] = part['Remarks'];
+                        }
+                        
+                        exportData.push(baseData);
                     });
                 } else {
                     // Export main RFQ even if no parts exist

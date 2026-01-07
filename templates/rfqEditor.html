@@ -130,7 +130,9 @@
         }
 
         /* Grid Layouts */
-        .parts-row { display: grid; grid-template-columns: repeat(8, 1fr) 35px; gap: 8px; align-items: end; margin-bottom: 8px; }
+        .parts-row { display: grid; gap: 8px; align-items: end; margin-bottom: 8px; }
+        .parts-row.sales { grid-template-columns: repeat(6, 1fr) 35px; }
+        .parts-row.admin { grid-template-columns: repeat(8, 1fr) 35px; }
         .pricing-row { display: grid; grid-template-columns: 100px repeat(11, 1fr) 2fr; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
         
         .btn-add { 
@@ -249,10 +251,27 @@
         </div>
 
         <div class="card">
+            <div class="card-title">Customer Address</div>
+            <div class="row">
+                <div class="col"><label>Address Line 1</label><input type="text" id="customer_address_1"></div>
+                <div class="col"><label>Address Line 2</label><input type="text" id="customer_address_2"></div>
+            </div>
+            <div class="row">
+                <div class="col"><label>City</label><input type="text" id="customer_city"></div>
+                <div class="col"><label>State</label><input type="text" id="customer_state"></div>
+                <div class="col"><label>PIN Code</label><input type="text" id="customer_pincode"></div>
+            </div>
+            <div class="row">
+                <div class="col"><label>Country</label><input type="text" id="customer_country"></div>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="card-title">Part Details</div>
             <div id="partsContainer">
-                <div class="parts-row" style="margin-bottom: 5px;">
-                    <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
+                <div class="parts-row {% if role == 'sales' %}sales{% else %}admin{% endif %}" style="margin-bottom: 5px;">
+                    <label>RFQ Part #</label>
+                    {% if role != 'sales' %}<label>Quoted Part #</label><label>Supplier</label>{% endif %}
                     <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
                     <label>Make</label><label>Lead</label>
                     <div></div>
@@ -261,6 +280,7 @@
             <button type="button" class="btn-add" onclick="addLinkedRow()">+ Add Part</button>
         </div>
 
+        {% if role != 'sales' %}
         <div class="card">
             <div class="card-title">Pricing (Per Part)</div>
             <div id="pricingContainer">
@@ -273,6 +293,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="status-footer">
             <button class="btn-save" onclick="saveRFQ()">Save RFQ</button>
@@ -283,6 +304,7 @@
     <script>
         let rowCount = 0;
         let currentRfqId = null;
+        const role = "{{ role }}";
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -381,6 +403,12 @@
                     document.getElementById('customer_name').value = rfq.Customer_name || '';
                     document.getElementById('customer_email').value = rfq.Customer_email || '';
                     document.getElementById('customer_phone').value = rfq.Customer_phone || '';
+                    document.getElementById('customer_address_1').value = rfq.Customer_address_1 || '';
+                    document.getElementById('customer_address_2').value = rfq.Customer_address_2 || '';
+                    document.getElementById('customer_city').value = rfq.Customer_city || '';
+                    document.getElementById('customer_state').value = rfq.Customer_state || '';
+                    document.getElementById('customer_pincode').value = rfq.Customer_pincode || '';
+                    document.getElementById('customer_country').value = rfq.Customer_country || '';
                     document.getElementById('rfq_purpose').value = rfq.RFQ_purpose || '';
                     document.getElementById('tentative_date').value = rfq.Tentative_date || '';
                     
@@ -431,11 +459,16 @@
             const pContainer = document.getElementById('partsContainer');
             const pRow = document.createElement('div');
             pRow.className = 'parts-row';
+            {% if role == 'sales' %}
+            pRow.classList.add('sales');
+            {% else %}
+            pRow.classList.add('admin');
+            {% endif %}
             pRow.id = `part-row-${rowCount}`;
             pRow.innerHTML = `
                 <input type="text" class="rfq_part_no" value="${data ? (data['RFQ-part-no'] || '') : ''}">
-                <input type="text" class="quoted_part_no" value="${data ? (data['Quoted-part-no'] || '') : ''}">
-                <input type="text" class="supplier" value="${data ? (data['Supplier'] || '') : ''}">
+                {% if role != 'sales' %}<input type="text" class="quoted_part_no" value="${data ? (data['Quoted-part-no'] || '') : ''}">
+                <input type="text" class="supplier" value="${data ? (data['Supplier'] || '') : ''}">{% endif %}
                 <input type="text" class="date_code" value="${data ? (data['Date Code'] || '') : ''}">
                 <input type="number" class="rfq_qty" value="${data ? (data['RFQ Qty'] || '') : ''}">
                 <input type="number" class="quoted_qty" value="${data ? (data['Quoted Qty'] || '') : ''}">
@@ -445,6 +478,7 @@
             `;
             pContainer.appendChild(pRow);
 
+            {% if role != 'sales' %}
             const prContainer = document.getElementById('pricingContainer');
             const prRow = document.createElement('div');
             prRow.className = 'pricing-row';
@@ -474,6 +508,7 @@
             if (data && data['Source']) {
                 handleSourceChange(rowCount);
             }
+            {% endif %}
         }
 
         function removeLinkedRow(id) {
@@ -484,7 +519,9 @@
             
             if (remainingParts.length > 1) {
                 partRow.remove();
+                {% if role != 'sales' %}
                 priceRow.remove();
+                {% endif %}
             } else {
                 alert("At least one part is required.");
             }
@@ -507,6 +544,12 @@
                 customer_name: document.getElementById('customer_name').value,
                 customer_email: document.getElementById('customer_email').value,
                 customer_phone: document.getElementById('customer_phone').value,
+                customer_address_1: document.getElementById('customer_address_1').value,
+                customer_address_2: document.getElementById('customer_address_2').value,
+                customer_city: document.getElementById('customer_city').value,
+                customer_state: document.getElementById('customer_state').value,
+                customer_pincode: document.getElementById('customer_pincode').value,
+                customer_country: document.getElementById('customer_country').value,
                 rfq_purpose: purpose,
                 tentative_date: tentativeDate,
                 items: []
@@ -515,18 +558,22 @@
             const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
             partRows.forEach((partRow) => {
                 const rowId = partRow.id.split('-')[2];
+                {% if role != 'sales' %}
                 const priceRow = document.getElementById(`price-row-${rowId}`);
                 const sourceSelect = document.getElementById(`source-${rowId}`);
+                {% endif %}
                 
                 const item = {
                     rfq_part_no: partRow.querySelector('.rfq_part_no').value,
-                    quoted_part_no: partRow.querySelector('.quoted_part_no').value,
-                    supplier: partRow.querySelector('.supplier').value,
+                    {% if role != 'sales' %}quoted_part_no: partRow.querySelector('.quoted_part_no').value,
+                    supplier: partRow.querySelector('.supplier').value,{% else %}quoted_part_no: '',
+                    supplier: '',{% endif %}
                     date_code: partRow.querySelector('.date_code').value,
                     rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
                     quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
                     make: partRow.querySelector('.make').value,
                     lead_time: partRow.querySelector('.lead_time').value,
+                    {% if role != 'sales' %}
                     source: sourceSelect ? sourceSelect.value : '',
                     unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${rowId}`).value) || 0,
                     unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${rowId}`).value) || 0,
@@ -539,6 +586,20 @@
                     resale: parseFloat(priceRow.querySelector('.resale').value) || 0,
                     tp: priceRow.querySelector('.tp').value,
                     remarks: priceRow.querySelector('.remarks').value
+                    {% else %}
+                    source: '',
+                    unit_price_usd: 0,
+                    unit_price_inr: 0,
+                    freight: 0,
+                    insurance: 0,
+                    bcd: 0,
+                    bank: 0,
+                    clearance: 0,
+                    margin: 0,
+                    resale: 0,
+                    tp: '',
+                    remarks: ''
+                    {% endif %}
                 };
                 rfqData.items.push(item);
             });
@@ -571,19 +632,27 @@
                 document.getElementById('customer_name').value = '';
                 document.getElementById('customer_email').value = '';
                 document.getElementById('customer_phone').value = '';
+                document.getElementById('customer_address_1').value = '';
+                document.getElementById('customer_address_2').value = '';
+                document.getElementById('customer_city').value = '';
+                document.getElementById('customer_state').value = '';
+                document.getElementById('customer_pincode').value = '';
+                document.getElementById('customer_country').value = '';
                 document.getElementById('rfq_purpose').value = '';
                 document.getElementById('tentative_date').value = '';
                 document.getElementById('rfq_date').valueAsDate = new Date();
                 document.getElementById('date_required').style.display = 'none';
                 
                 document.getElementById('partsContainer').innerHTML = `
-                    <div class="parts-row" style="margin-bottom: 5px;">
-                        <label>RFQ Part #</label><label>Quoted Part #</label><label>Supplier</label>
+                    <div class="parts-row {% if role == 'sales' %}sales{% else %}admin{% endif %}" style="margin-bottom: 5px;">
+                        <label>RFQ Part #</label>
+                        {% if role != 'sales' %}<label>Quoted Part #</label><label>Supplier</label>{% endif %}
                         <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
                         <label>Make</label><label>Lead</label>
                         <div></div>
                     </div>
                 `;
+                {% if role != 'sales' %}
                 document.getElementById('pricingContainer').innerHTML = `
                     <div class="pricing-row" style="margin-bottom: 5px;">
                         <label>Source</label>
@@ -593,11 +662,13 @@
                         <label>Resale</label><label>TP</label><label>Remarks</label>
                     </div>
                 `;
+                {% endif %}
                 
                 rowCount = 0;
                 addLinkedRow();
             }
         }
+    console.log({"role" : role});
     </script>
 
 </body>

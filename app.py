@@ -12,9 +12,11 @@ app.register_blueprint(api)
 csrf.exempt(api)
 
 @app.route("/rfq-entry")
-@role_required("admin", "sales")
+@role_required("admin", "sales", "pricing")
 def rfq(user):
-    return render_template("rfqEditor.html") 
+    user = get_current_user()
+    role = user.role
+    return render_template("rfqEditor.html",role=role) 
 
 @app.route("/")
 @login_required
@@ -29,7 +31,7 @@ def login():
     return render_template("login.html")
 
 @app.route("/make-user")
-@role_required("admin")
+@role_required("admin", "pricing")
 def make_user(user):
     return render_template("makeUser.html")
 
@@ -39,9 +41,10 @@ def admin(user):
     return render_template("admin.html")
 
 @app.route("/report")
-@role_required("admin")
+@role_required("admin", "pricing")
 def report(user):
-    return render_template("report.html")
+    role = user.role
+    return render_template("report.html", user=user, role=role)
 
 @app.route("/logout")
 @login_required
@@ -57,7 +60,8 @@ def logout(user):
 @app.route("/rfq-list")
 @login_required
 def rfq_list(user):
-    return render_template("rfqList.html", user=user)
+    role = user.role
+    return render_template("rfqList.html", user=user, role=role)
 
 if __name__ == "__main__":
     app.run(debug=True)
