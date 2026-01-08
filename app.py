@@ -31,7 +31,7 @@ def login():
     return render_template("login.html")
 
 @app.route("/make-user")
-@role_required("admin", "pricing")
+@role_required("admin")
 def make_user(user):
     return render_template("makeUser.html")
 
