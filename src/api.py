@@ -65,7 +65,6 @@ def make_entry(user):
             "Customer_country": data.get('customer_country'),
             "RFQ_purpose": data.get('rfq_purpose'),
             "Tentative_date": data.get('tentative_date') or None,
-            "Exchange_rate": data.get('exchange_rate'),
             "created_by": u_id
         }
         
@@ -100,7 +99,8 @@ def make_entry(user):
                 "Margin": item.get('margin'),
                 "Resale": item.get('resale'),
                 "TP": item.get('tp'),
-                "Remarks": item.get('remarks')
+                "Remarks": item.get('remarks'),
+                "Exchange_rate": item.get('exchange_rate')
             } for item in items]
             
             supabase.table("Part_details").insert(items_to_insert).execute()

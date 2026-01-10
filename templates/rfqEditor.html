@@ -129,6 +129,18 @@
             border-color: var(--primary-blue);
         }
 
+        /* Manual Override Styling */
+        .manual-override {
+            background-color: #fff3cd !important;
+            border-color: #ffc107 !important;
+            font-weight: bold;
+        }
+        
+        .manual-override:focus {
+            border-color: #e0a800 !important;
+            box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.25);
+        }
+
         /* Grid Layouts */
         .parts-row { display: grid; gap: 8px; align-items: end; margin-bottom: 8px; }
         .parts-row.sales { grid-template-columns: repeat(6, 1fr) 35px; }
@@ -317,7 +329,11 @@
 
         {% if role != 'sales' %}
         <div class="card">
-            <div class="card-title">Pricing (Per Part)</div>
+            <div class="card-title">Pricing (Per Part) 
+                <small style="font-weight: normal; color: #666; font-size: 11px;">
+                    💡 Yellow fields are manually entered values
+                </small>
+            </div>
             <div id="pricingContainer">
                 <div class="pricing-row" style="margin-bottom: 5px;">
                     <label>Source</label>
@@ -435,15 +451,6 @@
                 if (rfqPurposeField) rfqPurposeField.value = rfq.RFQ_purpose || '';
                 if (tentativeDateField) tentativeDateField.value = rfq.Tentative_date ? rfq.Tentative_date.split('T')[0] : '';
 
-                // Set exchange rate from database if available
-                if (rfq.Exchange_rate) {
-                    globalExchangeRate = parseFloat(rfq.Exchange_rate);
-                    exchangeRateLastUpdated = new Date().toISOString();
-                } else {
-                    // If no exchange rate in database, fetch current rate
-                    await initializeExchangeRate();
-                }
-
                 // Clear existing rows (keep header)
                 const partsContainer = document.getElementById('partsContainer');
                 const pricingContainer = document.getElementById('pricingContainer');
@@ -482,6 +489,11 @@
                     });
                 } else {
                     addLinkedRow();
+                }
+
+                // Initialize exchange rate if not already set from part data
+                if (!globalExchangeRate) {
+                    await initializeExchangeRate();
                 }
 
                 // Trigger purpose change to show/hide date required field
@@ -568,7 +580,7 @@
         }
     }
 
-    function calculatePricing(id) {
+    function calculatePricing(id, forceRecalculate = false) {
         const source = document.getElementById(`source-${id}`).value;
         const partRow = document.getElementById(`part-row-${id}`);
         const priceRow = document.getElementById(`price-row-${id}`);
@@ -616,27 +628,48 @@
         // 7. Resale = Landed Cost + Margin
         const resale = landedCost + margin;
 
-        // Update UI Fields
-        priceRow.querySelector('.freight').value = freight.toFixed(2);
-        priceRow.querySelector('.insurance').value = insurance.toFixed(2);
-        priceRow.querySelector('.bcd').value = bcd.toFixed(2);
-        priceRow.querySelector('.bank').value = bank.toFixed(2);
-        priceRow.querySelector('.clearance').value = clearance.toFixed(2);
-        priceRow.querySelector('.margin').value = margin.toFixed(2);
-        priceRow.querySelector('.resale').value = resale.toFixed(2);
+        // Update UI Fields (clear manual overrides if force recalculating)
+        const freightField = priceRow.querySelector('.freight');
+        const insuranceField = priceRow.querySelector('.insurance');
+        const bcdField = priceRow.querySelector('.bcd');
+        const bankField = priceRow.querySelector('.bank');
+        const clearanceField = priceRow.querySelector('.clearance');
+        const marginField = priceRow.querySelector('.margin');
+        const resaleField = priceRow.querySelector('.resale');
+
+        // If force recalculating, clear all manual override flags
+        if (forceRecalculate) {
+            [freightField, insuranceField, bcdField, bankField, clearanceField, marginField, resaleField].forEach(field => {
+                field.removeAttribute('data-manual-override');
+                field.classList.remove('manual-override');
+            });
+        }
+
+        // Always update all fields (either calculated or preserved manual values)
+        freightField.value = freight.toFixed(2);
+        insuranceField.value = insurance.toFixed(2);
+        bcdField.value = bcd.toFixed(2);
+        bankField.value = bank.toFixed(2);
+        clearanceField.value = clearance.toFixed(2);
+        marginField.value = margin.toFixed(2);
+        resaleField.value = resale.toFixed(2);
     }
 
     function calculateAllPricing() {
         // Get all pricing rows
-        const pricingRows = document.querySelectorAll('.pricing-row:not([style*="margin-bottom: 5px"])');
+        const pricingRows = document.querySelectorAll('.pricing-row');
         
-        pricingRows.forEach((row, index) => {
-            const rowId = index + 1;
-            const sourceSelect = document.getElementById(`source-${rowId}`);
-            
-            // Calculate for both Import and Local items
-            if (sourceSelect && sourceSelect.value) {
-                calculatePricing(rowId);
+        pricingRows.forEach((row) => {
+            // Extract row ID from the element ID (e.g., "price-row-1" -> 1)
+            const rowIdMatch = row.id.match(/price-row-(\d+)/);
+            if (rowIdMatch) {
+                const rowId = parseInt(rowIdMatch[1]);
+                const sourceSelect = document.getElementById(`source-${rowId}`);
+                
+                // Calculate for both Import and Local items (force recalculation)
+                if (sourceSelect && sourceSelect.value) {
+                    calculatePricing(rowId, true);
+                }
             }
         });
     }
@@ -674,9 +707,9 @@
             prRow.className = 'pricing-row';
             prRow.id = `price-row-${rowCount}`;
             
-            // Use global exchange rate if available, otherwise calculate from data or default to 92
-            let defaultExch = globalExchangeRate || "92";
-            if (data && data['Unit$'] && data['Unit₹']) {
+            // Use exchange rate from data if available, otherwise use global rate or default to 92
+            let defaultExch = data?.Exchange_rate || globalExchangeRate || "92";
+            if (!data?.Exchange_rate && data && data['Unit$'] && data['Unit₹']) {
                 const usd = parseFloat(data['Unit$']);
                 const inr = parseFloat(data['Unit₹']);
                 if (usd > 0 && inr > 0) {
@@ -694,16 +727,28 @@
                 '<input type="number" id="exch-' + rowCount + '" value="' + defaultExch + '" oninput="calculateINR(' + rowCount + ')">' +
                 '<input type="number" id="inr-' + rowCount + '" value="' + (data?.['Unit₹'] || '') + '">' +
                 '<input type="text" class="freight" value="' + (data?.['Freight'] ? data['Freight'].toFixed(2) : '') + '">' +
-                '<input type="text" class="insurance" readonly value="' + (data?.['Insurance'] ? data['Insurance'].toFixed(2) : '') + '">' +
-                '<input type="text" class="bcd" readonly value="' + (data?.['BCD'] ? data['BCD'].toFixed(2) : '') + '">' +
-                '<input type="text" class="bank" readonly value="' + (data?.['Bank'] ? data['Bank'].toFixed(2) : '') + '">' +
-                '<input type="text" class="clearance" readonly value="' + (data?.['Clearance'] ? data['Clearance'].toFixed(2) : '') + '">' +
-                '<input type="text" class="margin" readonly value="' + (data?.['Margin'] ? data['Margin'].toFixed(2) : '') + '">' +
-                '<input type="text" class="resale" readonly value="' + (data?.['Resale'] ? data['Resale'].toFixed(2) : '') + '">' +
+                '<input type="text" class="insurance" value="' + (data?.['Insurance'] ? data['Insurance'].toFixed(2) : '') + '">' +
+                '<input type="text" class="bcd" value="' + (data?.['BCD'] ? data['BCD'].toFixed(2) : '') + '">' +
+                '<input type="text" class="bank" value="' + (data?.['Bank'] ? data['Bank'].toFixed(2) : '') + '">' +
+                '<input type="text" class="clearance" value="' + (data?.['Clearance'] ? data['Clearance'].toFixed(2) : '') + '">' +
+                '<input type="text" class="margin" value="' + (data?.['Margin'] ? data['Margin'].toFixed(2) : '') + '">' +
+                '<input type="text" class="resale" value="' + (data?.['Resale'] ? data['Resale'].toFixed(2) : '') + '">' +
                 '<input type="text" class="tp" value="' + (data?.['TP'] || '') + '">' +
                 '<input type="text" class="remarks" value="' + (data?.['Remarks'] || '') + '">' +
-                '<button type="button" class="btn-calculate" onclick="calculatePricing(' + rowCount + ')">Calc</button>';
+                '<button type="button" class="btn-calculate" onclick="calculatePricing(' + rowCount + ', true)">Calc</button>';
             prContainer.appendChild(prRow);
+            
+            // Add manual override detection to pricing fields
+            const manualFields = prRow.querySelectorAll('.freight, .insurance, .bcd, .bank, .clearance, .margin, .resale');
+            manualFields.forEach(field => {
+                field.addEventListener('input', function() {
+                    if (!this.hasAttribute('data-manual-override')) {
+                        this.setAttribute('data-manual-override', 'true');
+                        this.classList.add('manual-override');
+                    }
+                });
+            });
+            
             if (data?.Source) handleSourceChange(rowCount);
         }
     }
@@ -744,7 +789,6 @@
             customer_country: document.getElementById('customer_country').value,
             rfq_purpose: purpose,
             tentative_date: tentativeDate,
-            exchange_rate: globalExchangeRate,
             items: []
         };
 
@@ -772,7 +816,8 @@
                 margin: prRow ? parseFloat(prRow.querySelector('.margin').value) : 0,
                 resale: prRow ? parseFloat(prRow.querySelector('.resale').value) : 0,
                 tp: prRow ? prRow.querySelector('.tp').value : '',
-                remarks: prRow ? prRow.querySelector('.remarks').value : ''
+                remarks: prRow ? prRow.querySelector('.remarks').value : '',
+                exchange_rate: prRow ? parseFloat(document.getElementById(`exch-${id}`).value) : globalExchangeRate
             });
         });
 
