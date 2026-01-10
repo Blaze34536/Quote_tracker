@@ -191,9 +191,26 @@
             color: #94a3b8;
             margin-top: 5px;
         }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
+
 
     <div class="login-container">
         <div class="login-card">
@@ -273,6 +290,9 @@
             </div>
 
             <div class="login-link">
+                <div class="user-info" style="display: inline-block; margin-right: 20px;">
+                    <span class="user-name">{{ user_name }} (admin)</span>
+                </div>
                 <a href="/rfq-list">Back to RFQ List</a>
             </div>
         </div>

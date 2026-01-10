@@ -16,7 +16,8 @@ csrf.exempt(api)
 def rfq(user):
     user = get_current_user()
     role = user.role
-    return render_template("rfqEditor.html",role=role) 
+    user_name = user.email.split('@')[0] if user.email else 'User'  # Get name from email
+    return render_template("rfqEditor.html", role=role, user_name=user_name) 
 
 @app.route("/")
 @login_required
@@ -33,18 +34,21 @@ def login():
 @app.route("/make-user")
 @role_required("admin")
 def make_user(user):
-    return render_template("makeUser.html")
+    user_name = user.email.split('@')[0] if user.email else 'User'
+    return render_template("makeUser.html", user_name=user_name)
 
 @app.route("/admin")
 @role_required("admin")
 def admin(user):
-    return render_template("admin.html")
+    user_name = user.email.split('@')[0] if user.email else 'User'
+    return render_template("admin.html", user_name=user_name)
 
 @app.route("/report")
 @role_required("admin", "pricing")
 def report(user):
     role = user.role
-    return render_template("report.html", user=user, role=role)
+    user_name = user.email.split('@')[0] if user.email else 'User'
+    return render_template("report.html", user=user, role=role, user_name=user_name)
 
 @app.route("/logout")
 @login_required
@@ -61,7 +65,8 @@ def logout(user):
 @login_required
 def rfq_list(user):
     role = user.role
-    return render_template("rfqList.html", user=user, role=role)
+    user_name = user.email.split('@')[0] if user.email else 'User'
+    return render_template("rfqList.html", user=user, role=role, user_name=user_name)
 
 if __name__ == "__main__":
     app.run(debug=True)

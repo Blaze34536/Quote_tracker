@@ -333,6 +333,22 @@
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
             transition: width 0.3s;
         }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-right: 16px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
@@ -343,6 +359,9 @@
             {% if user.role == 'admin' %}
             <a href="/admin" class="btn-secondary">Admin Panel</a>
             {% endif %}
+            <div class="user-info">
+                <span class="user-name">{{ user_name }} ({{ role }})</span>
+            </div>
             <a href="/logout" class="btn-secondary">Logout</a>
         </div>
     </div>
