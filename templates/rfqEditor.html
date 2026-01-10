@@ -133,7 +133,7 @@
         .parts-row { display: grid; gap: 8px; align-items: end; margin-bottom: 8px; }
         .parts-row.sales { grid-template-columns: repeat(6, 1fr) 35px; }
         .parts-row.admin { grid-template-columns: repeat(8, 1fr) 35px; }
-        .pricing-row { display: grid; grid-template-columns: 100px repeat(11, 1fr) 2fr; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
+        .pricing-row { display: grid; grid-template-columns: 100px repeat(11, 1fr) 2fr 80px; gap: 8px; align-items: end; margin-bottom: 12px; border-top: 1px solid #f0f0f0; padding-top: 8px; }
         
         .btn-add { 
             background-color: var(--success-green);
@@ -186,6 +186,24 @@
         .btn-reset:hover {
             background-color: #5a6268;
         }
+
+        .btn-calculate-all {
+            background-color: var(--success-green);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            float: right;
+            margin-right: 12px;
+            transition: all 0.15s;
+        }
+
+        .btn-calculate-all:hover {
+            background-color: #218838;
+        }
         
         .btn-remove { 
             background-color: var(--danger-red);
@@ -196,6 +214,23 @@
             height: 28px;
             width: 30px;
             font-weight: bold;
+        }
+
+        .btn-calculate {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s;
+            min-width: 80px;
+        }
+
+        .btn-calculate:hover {
+            background-color: #0052a3;
         }
 
         .status-footer { margin-top: 30px; overflow: hidden; }
@@ -290,6 +325,7 @@
                     <label>Freight</label><label>Insur.</label><label>BCD</label>
                     <label>Bank</label><label>Clear.</label><label>Margin</label>
                     <label>Resale</label><label>TP</label><label>Remarks</label>
+                    <label>Action</label>
                 </div>
             </div>
         </div>
@@ -297,379 +333,465 @@
 
         <div class="status-footer">
             <button class="btn-save" onclick="saveRFQ()">Save RFQ</button>
+            {% if role != 'sales' %}
+            <button class="btn-calculate-all" onclick="calculateAllPricing()">Calculate All</button>
+            {% endif %}
             <button class="btn-reset" onclick="resetForm()">Reset</button>
         </div>
     </div>
 
-    <script>
-        let rowCount = 0;
-        let currentRfqId = null;
-        const role = "{{ role }}";
+ <script>
+    let rowCount = 0;
+    let currentRfqId = null;
+    const role = "{{ role }}";
+    let globalExchangeRate = null;
+    let exchangeRateLastUpdated = null;
 
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            currentRfqId = urlParams.get('edit');
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentRfqId = urlParams.get('edit');
 
-            if (currentRfqId) {
-                document.getElementById('pageTitle').innerText = "Edit RFQ #" + currentRfqId;
-                loadExistingRFQ(currentRfqId);
-            } else {
-                document.getElementById('rfq_date').valueAsDate = new Date();
-                addLinkedRow();
-            }
-        };
-
-        function handlePurposeChange() {
-            const purpose = document.getElementById('rfq_purpose').value;
-            const dateRequired = document.getElementById('date_required');
-            
-            if (purpose === 'Bidding') {
-                dateRequired.style.display = 'inline';
-            } else {
-                dateRequired.style.display = 'none';
-            }
+        if (currentRfqId) {
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) pageTitle.innerText = "Edit RFQ #" + currentRfqId;
+            loadExistingRFQ(currentRfqId);
+        } else {
+            const rfqDateField = document.getElementById('rfq_date');
+            if (rfqDateField) rfqDateField.valueAsDate = new Date();
+            addLinkedRow();
         }
+        initializeExchangeRate();
+    };
 
-        function handleSourceChange(rowId) {
-            const sourceSelect = document.getElementById(`source-${rowId}`);
-            const source = sourceSelect ? sourceSelect.value : '';
-            const priceRow = document.getElementById(`price-row-${rowId}`);
-            
-            if (!priceRow) return;
-            
-            const usdField = priceRow.querySelector(`#usd-${rowId}`);
-            const inrField = priceRow.querySelector(`#inr-${rowId}`);
-            const exchField = priceRow.querySelector(`#exch-${rowId}`);
-            const insurance = priceRow.querySelector('.insurance');
-            const bcd = priceRow.querySelector('.bcd');
-            const bank = priceRow.querySelector('.bank');
-            const clearance = priceRow.querySelector('.clearance');
-            
-            if (source === 'Local') {
-                usdField.readOnly = true;
-                usdField.style.backgroundColor = '#f8f9fa';
-                usdField.value = '';
-                inrField.readOnly = false;
-                inrField.style.backgroundColor = '';
-                inrField.removeAttribute('oninput');
-                exchField.value = '';
-                exchField.readOnly = true;
-                exchField.style.backgroundColor = '#f8f9fa';
-                
-                insurance.disabled = true;
-                bcd.disabled = true;
-                bank.disabled = true;
-                clearance.disabled = true;
-                insurance.value = '';
-                bcd.value = '';
-                bank.value = '';
-                clearance.value = '';
-                insurance.style.backgroundColor = '#e9ecef';
-                bcd.style.backgroundColor = '#e9ecef';
-                bank.style.backgroundColor = '#e9ecef';
-                clearance.style.backgroundColor = '#e9ecef';
-            } else if (source === 'Import') {
-                usdField.readOnly = false;
-                usdField.style.backgroundColor = '';
-                inrField.readOnly = true;
-                inrField.style.backgroundColor = '#f8f9fa';
-                usdField.setAttribute('oninput', `calculateINR(${rowId})`);
-                exchField.readOnly = false;
-                exchField.style.backgroundColor = '';
-                exchField.setAttribute('oninput', `calculateINR(${rowId})`);
-                
-                insurance.disabled = false;
-                bcd.disabled = false;
-                bank.disabled = false;
-                clearance.disabled = false;
-                insurance.style.backgroundColor = '';
-                bcd.style.backgroundColor = '';
-                bank.style.backgroundColor = '';
-                clearance.style.backgroundColor = '';
-            }
+    // --- EXCHANGE RATE LOGIC ---
+
+    async function initializeExchangeRate() {
+        const now = new Date();
+        if (!globalExchangeRate || !exchangeRateLastUpdated || (now - exchangeRateLastUpdated) > 3600000) {
+            await fetchExchangeRate();
         }
+        setInterval(async () => {
+            const now = new Date();
+            if (!exchangeRateLastUpdated || (now - exchangeRateLastUpdated) > 3600000) {
+                await fetchExchangeRate();
+            }
+        }, 3600000);
+    }
 
-        async function loadExistingRFQ(id) {
-            try {
-                const response = await fetch(`/api/get-rfq/${id}`);
-                const result = await response.json();
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('/api/get-usd-inr');
+            const data = await response.json();
+            if (data.success && data.rate) {
+                globalExchangeRate = data.rate;
+                exchangeRateLastUpdated = new Date();
+                console.log(`Exchange rate updated: ${data.rate}`);
+                return true;
+            }
+        } catch (error) {
+            console.error('Error fetching exchange rate:', error);
+        }
+        return false;
+    }
 
-                if (result.success && result.data) {
-                    const rfq = result.data;
-                    
-                    document.getElementById('rfq_no').value = rfq['RFQ-no'] || '';
-                    document.getElementById('company_name').value = rfq.Company_name || '';
-                    document.getElementById('sales_person').value = rfq.Sales_person || '';
-                    document.getElementById('customer_name').value = rfq.Customer_name || '';
-                    document.getElementById('customer_email').value = rfq.Customer_email || '';
-                    document.getElementById('customer_phone').value = rfq.Customer_phone || '';
-                    document.getElementById('customer_address_1').value = rfq.Customer_address_1 || '';
-                    document.getElementById('customer_address_2').value = rfq.Customer_address_2 || '';
-                    document.getElementById('customer_city').value = rfq.Customer_city || '';
-                    document.getElementById('customer_state').value = rfq.Customer_state || '';
-                    document.getElementById('customer_pincode').value = rfq.Customer_pincode || '';
-                    document.getElementById('customer_country').value = rfq.Customer_country || '';
-                    document.getElementById('rfq_purpose').value = rfq.RFQ_purpose || '';
-                    document.getElementById('tentative_date').value = rfq.Tentative_date || '';
-                    
-                    if (rfq.created_at) {
-                        document.getElementById('rfq_date').value = rfq.created_at.split('T')[0];
-                    }
+    // --- LOAD EXISTING RFQ ---
 
-                    handlePurposeChange();
-                    
-                    if (rfq.Part_details && rfq.Part_details.length > 0) {
-                        rfq.Part_details.forEach(item => addLinkedRow(item));
-                    } else {
-                        addLinkedRow();
+    async function loadExistingRFQ(id) {
+        try {
+            const response = await fetch(`/api/get-rfq/${id}`);
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                const rfq = result.data;
+                
+                // Populate Header fields (with null checks)
+                const rfqNoField = document.getElementById('rfq_no');
+                const companyNameField = document.getElementById('company_name');
+                const salesPersonField = document.getElementById('sales_person');
+                const customerNameField = document.getElementById('customer_name');
+                const customerEmailField = document.getElementById('customer_email');
+                const customerPhoneField = document.getElementById('customer_phone');
+                const customerAddress1Field = document.getElementById('customer_address_1');
+                const customerAddress2Field = document.getElementById('customer_address_2');
+                const customerCityField = document.getElementById('customer_city');
+                const customerStateField = document.getElementById('customer_state');
+                const customerPincodeField = document.getElementById('customer_pincode');
+                const customerCountryField = document.getElementById('customer_country');
+                const rfqPurposeField = document.getElementById('rfq_purpose');
+                const tentativeDateField = document.getElementById('tentative_date');
+                
+                if (rfqNoField) rfqNoField.value = rfq['RFQ-no'] || '';
+                if (companyNameField) companyNameField.value = rfq.Company_name || '';
+                if (salesPersonField) salesPersonField.value = rfq.Sales_person || '';
+                if (customerNameField) customerNameField.value = rfq.Customer_name || '';
+                if (customerEmailField) customerEmailField.value = rfq.Customer_email || '';
+                if (customerPhoneField) customerPhoneField.value = rfq.Customer_phone || '';
+                if (customerAddress1Field) customerAddress1Field.value = rfq.Customer_address_1 || '';
+                if (customerAddress2Field) customerAddress2Field.value = rfq.Customer_address_2 || '';
+                if (customerCityField) customerCityField.value = rfq.Customer_city || '';
+                if (customerStateField) customerStateField.value = rfq.Customer_state || '';
+                if (customerPincodeField) customerPincodeField.value = rfq.Customer_pincode || '';
+                if (customerCountryField) customerCountryField.value = rfq.Customer_country || '';
+                if (rfqPurposeField) rfqPurposeField.value = rfq.RFQ_purpose || '';
+                if (tentativeDateField) tentativeDateField.value = rfq.Tentative_date ? rfq.Tentative_date.split('T')[0] : '';
+
+                // Set exchange rate from database if available
+                if (rfq.Exchange_rate) {
+                    globalExchangeRate = parseFloat(rfq.Exchange_rate);
+                    exchangeRateLastUpdated = new Date().toISOString();
+                } else {
+                    // If no exchange rate in database, fetch current rate
+                    await initializeExchangeRate();
+                }
+
+                // Clear existing rows (keep header)
+                const partsContainer = document.getElementById('partsContainer');
+                const pricingContainer = document.getElementById('pricingContainer');
+                
+                if (!partsContainer) {
+                    console.error('partsContainer not found');
+                    return;
+                }
+                
+                // Remove all rows except the first header row
+                if (partsContainer.children) {
+                    while (partsContainer.children.length > 1) {
+                        partsContainer.removeChild(partsContainer.lastChild);
                     }
                 }
-            } catch (err) {
-                console.error("Load Error:", err);
-                alert("Failed to load RFQ data.");
+                
+                // Only clear pricing container if it exists (for admin users)
+                if (pricingContainer && pricingContainer.children) {
+                    while (pricingContainer.children.length > 1) {
+                        pricingContainer.removeChild(pricingContainer.lastChild);
+                    }
+                }
+
+                // Add rows for each part
+                if (rfq.Part_details && rfq.Part_details.length > 0) {
+                    rfq.Part_details.forEach((part, index) => {
+                        // Sanitize data to prevent Infinity calculations
+                        const sanitizedPart = { ...part };
+                        if (sanitizedPart['Unit$'] === 0 || sanitizedPart['Unit$'] === null || sanitizedPart['Unit$'] === undefined) {
+                            sanitizedPart['Unit$'] = '';
+                        }
+                        if (sanitizedPart['Unit₹'] === 0 || sanitizedPart['Unit₹'] === null || sanitizedPart['Unit₹'] === undefined) {
+                            sanitizedPart['Unit₹'] = '';
+                        }
+                        addLinkedRow(sanitizedPart);
+                    });
+                } else {
+                    addLinkedRow();
+                }
+
+                // Trigger purpose change to show/hide date required field
+                handlePurposeChange();
             }
+        } catch (err) {
+            console.error("Load Error:", err);
+            alert("Failed to load RFQ data.");
+        }
+    }
+
+    // --- UI HANDLERS ---
+
+    function handlePurposeChange() {
+        const purpose = document.getElementById('rfq_purpose').value;
+        const dateRequired = document.getElementById('date_required');
+        dateRequired.style.display = (purpose === 'Bidding') ? 'inline' : 'none';
+    }
+
+    function handleSourceChange(id) {
+        const source = document.getElementById(`source-${id}`).value;
+        const priceRow = document.getElementById(`price-row-${id}`);
+        if (!priceRow) return;
+
+        const usdField = document.getElementById(`usd-${id}`);
+        const inrField = document.getElementById(`inr-${id}`);
+        const exchField = document.getElementById(`exch-${id}`);
+        const importFields = priceRow.querySelectorAll('.insurance, .bcd, .bank, .clearance, .freight');
+
+        if (source === 'Local') {
+            // Disable Import Fields
+            usdField.readOnly = true;
+            usdField.value = '';
+            usdField.style.backgroundColor = '#f8f9fa';
+            
+            inrField.readOnly = false;
+            inrField.style.backgroundColor = '#ffffff';
+            
+            exchField.value = '';
+            exchField.readOnly = true;
+            exchField.style.backgroundColor = '#f8f9fa';
+
+            // Enable freight for manual editing, disable other import fields
+            const freightField = priceRow.querySelector('.freight');
+            freightField.disabled = false;
+            freightField.style.backgroundColor = '#ffffff';
+            
+            const otherImportFields = priceRow.querySelectorAll('.insurance, .bcd, .bank, .clearance');
+            otherImportFields.forEach(f => {
+                f.value = '0.00';
+                f.disabled = true;
+                f.style.backgroundColor = '#e9ecef';
+            });
+        } else if (source === 'Import') {
+            // Enable Import Fields
+            usdField.readOnly = false;
+            usdField.style.backgroundColor = '#ffffff';
+            
+            inrField.readOnly = true;
+            inrField.style.backgroundColor = '#f8f9fa';
+            
+            exchField.readOnly = false;
+            exchField.style.backgroundColor = '#ffffff';
+            if (!exchField.value || exchField.value === "92") {
+                if (globalExchangeRate) exchField.value = globalExchangeRate.toFixed(2);
+            }
+
+            importFields.forEach(f => {
+                f.disabled = false;
+                f.style.backgroundColor = '#ffffff';
+            });
+        }
+    }
+
+    // --- CALCULATION LOGIC ---
+
+    function calculateINR(id) {
+        const usd = parseFloat(document.getElementById(`usd-${id}`).value) || 0;
+        const exch = parseFloat(document.getElementById(`exch-${id}`).value) || 0;
+        const inrField = document.getElementById(`inr-${id}`);
+        
+        if (usd && exch) {
+            inrField.value = (usd * exch).toFixed(2);
+        }
+    }
+
+    function calculatePricing(id) {
+        const source = document.getElementById(`source-${id}`).value;
+        const partRow = document.getElementById(`part-row-${id}`);
+        const priceRow = document.getElementById(`price-row-${id}`);
+        
+        if (!source || !partRow || !priceRow) return;
+
+        const quotedQty = parseFloat(partRow.querySelector('.quoted_qty').value) || 1;
+        const exch = parseFloat(document.getElementById(`exch-${id}`).value) || globalExchangeRate || 92;
+        let unitPriceINR = 0;
+        
+        let freight = 0, insurance = 0, bcd = 0, bank = 0, clearance = 0;
+
+        if (source === 'Import') {
+            const usd = parseFloat(document.getElementById(`usd-${id}`).value) || 0;
+            unitPriceINR = usd * exch;
+            document.getElementById(`inr-${id}`).value = unitPriceINR.toFixed(2);
+
+            // Prevent division by zero and ensure quotedQty is at least 1
+            const safeQty = Math.max(quotedQty, 1);
+
+            // 1. Freight = (80 * Exch) / Qty
+            freight = (80 * exch) / safeQty;
+            // 2. Insurance = Unit INR * 1.125%
+            insurance = unitPriceINR * 0.01125;
+            // 3. BCD & Cess = (Unit INR + Freight + Insurance) * 16.5%
+            bcd = (unitPriceINR + freight + insurance) * 0.165;
+            // 4. Bank = (10 * Exch) / Qty
+            bank = (10 * exch) / safeQty;
+            // 5. Clearance = 6500 / Qty
+            clearance = 6500 / safeQty;
+
+        } else {
+            unitPriceINR = parseFloat(document.getElementById(`inr-${id}`).value) || 0;
+            // For Local items, use manually entered freight value
+            freight = parseFloat(priceRow.querySelector('.freight').value) || 0;
+            // All other import fees remain 0 for Local
         }
 
-        function calculateINR(id) {
-            const sourceSelect = document.getElementById(`source-${id}`);
-            const source = sourceSelect ? sourceSelect.value : '';
-            const usd = document.getElementById(`usd-${id}`).value;
-            const exch = document.getElementById(`exch-${id}`).value;
-            const inrField = document.getElementById(`inr-${id}`);
-            
-            if (source === 'Local') {
-                return;
-            }
-            
-            if (usd && exch) {
-                inrField.value = (parseFloat(usd) * parseFloat(exch)).toFixed(2);
-            } else {
-                inrField.value = "";
-            }
-        }
+        // --- THE LANDED COST SUM ---
+        const landedCost = unitPriceINR + freight + insurance + bcd + bank + clearance;
+        
+        // 6. Margin = Landed Cost * 15%
+        const margin = landedCost * 0.15;
+        
+        // 7. Resale = Landed Cost + Margin
+        const resale = landedCost + margin;
 
-        function addLinkedRow(data = null) {
-            rowCount++;
-            
-            let defaultExch = "92";
-            if (data && data['Unit$'] && data['Unit₹']) {
-                defaultExch = (data['Unit₹'] / data['Unit$']).toFixed(2);
-            }
-            
-            const pContainer = document.getElementById('partsContainer');
-            const pRow = document.createElement('div');
-            pRow.className = 'parts-row';
-            {% if role == 'sales' %}
-            pRow.classList.add('sales');
-            {% else %}
-            pRow.classList.add('admin');
-            {% endif %}
-            pRow.id = `part-row-${rowCount}`;
-            pRow.innerHTML = `
-                <input type="text" class="rfq_part_no" value="${data ? (data['RFQ-part-no'] || '') : ''}">
-                {% if role != 'sales' %}<input type="text" class="quoted_part_no" value="${data ? (data['Quoted-part-no'] || '') : ''}">
-                <input type="text" class="supplier" value="${data ? (data['Supplier'] || '') : ''}">{% endif %}
-                <input type="text" class="date_code" value="${data ? (data['Date Code'] || '') : ''}">
-                <input type="number" class="rfq_qty" value="${data ? (data['RFQ Qty'] || '') : ''}">
-                <input type="number" class="quoted_qty" value="${data ? (data['Quoted Qty'] || '') : ''}">
-                <input type="text" class="make" value="${data ? (data['Make'] || '') : ''}">
-                <input type="text" class="lead_time" value="${data ? (data['Lead'] || '') : ''}">
-                <button type="button" class="btn-remove" onclick="removeLinkedRow(${rowCount})">×</button>
-            `;
-            pContainer.appendChild(pRow);
+        // Update UI Fields
+        priceRow.querySelector('.freight').value = freight.toFixed(2);
+        priceRow.querySelector('.insurance').value = insurance.toFixed(2);
+        priceRow.querySelector('.bcd').value = bcd.toFixed(2);
+        priceRow.querySelector('.bank').value = bank.toFixed(2);
+        priceRow.querySelector('.clearance').value = clearance.toFixed(2);
+        priceRow.querySelector('.margin').value = margin.toFixed(2);
+        priceRow.querySelector('.resale').value = resale.toFixed(2);
+    }
 
-            {% if role != 'sales' %}
-            const prContainer = document.getElementById('pricingContainer');
+    function calculateAllPricing() {
+        // Get all pricing rows
+        const pricingRows = document.querySelectorAll('.pricing-row:not([style*="margin-bottom: 5px"])');
+        
+        pricingRows.forEach((row, index) => {
+            const rowId = index + 1;
+            const sourceSelect = document.getElementById(`source-${rowId}`);
+            
+            // Calculate for both Import and Local items
+            if (sourceSelect && sourceSelect.value) {
+                calculatePricing(rowId);
+            }
+        });
+    }
+
+    // --- ROW MANAGEMENT ---
+
+    function addLinkedRow(data = null) {
+        rowCount++;
+        const pContainer = document.getElementById('partsContainer');
+        const prContainer = document.getElementById('pricingContainer');
+
+        // For sales users, mask sensitive data
+        const isSales = role === 'sales';
+        const maskedValue = '---';
+
+        // Parts Row
+        const pRow = document.createElement('div');
+        pRow.className = `parts-row ${role === 'sales' ? 'sales' : 'admin'}`;
+        pRow.id = `part-row-${rowCount}`;
+        pRow.innerHTML = 
+            '<input type="text" class="rfq_part_no" value="' + (data?.['RFQ-part-no'] || '') + '">' +
+            (role !== 'sales' ? '<input type="text" class="quoted_part_no" value="' + (data?.['Quoted-part-no'] || '') + '">' : '') +
+            (role !== 'sales' ? '<input type="text" class="supplier" value="' + (data?.['Supplier'] || '') + '">' : '') +
+            '<input type="text" class="date_code" value="' + (data?.['Date Code'] || '') + '">' +
+            '<input type="number" class="rfq_qty" value="' + (data?.['RFQ Qty'] || '') + '">' +
+            '<input type="number" class="quoted_qty" value="' + (data?.['Quoted Qty'] || '') + '" oninput="calculatePricing(' + rowCount + ')">' +
+            '<input type="text" class="make" value="' + (data?.['Make'] || '') + '">' +
+            '<input type="text" class="lead_time" value="' + (data?.['Lead'] || '') + '">' +
+            '<button type="button" class="btn-remove" onclick="removeLinkedRow(' + rowCount + ')">×</button>';
+        pContainer.appendChild(pRow);
+
+        // Pricing Row (Admin Only)
+        if (role !== 'sales') {
             const prRow = document.createElement('div');
             prRow.className = 'pricing-row';
             prRow.id = `price-row-${rowCount}`;
             
-            prRow.innerHTML = `
-                <select id="source-${rowCount}" onchange="handleSourceChange(${rowCount})">
-                    <option value="">Select</option>
-                    <option value="Import" ${data && data['Source'] === 'Import' ? 'selected' : ''}>Import</option>
-                    <option value="Local" ${data && data['Source'] === 'Local' ? 'selected' : ''}>Local</option>
-                </select>
-                <input type="number" step="0.0001" id="usd-${rowCount}" oninput="calculateINR(${rowCount})" value="${data ? (data['Unit$'] || '') : ''}">
-                <input type="number" id="exch-${rowCount}" oninput="calculateINR(${rowCount})" value="${defaultExch}">
-                <input type="number" id="inr-${rowCount}" value="${data ? (data['Unit₹'] || '') : ''}" readonly style="background:#f8f9fa;">
-                <input type="text" class="freight" value="${data ? (data['Freight'] || '') : ''}">
-                <input type="text" class="insurance" value="${data ? (data['Insur.'] || '') : ''}">
-                <input type="text" class="bcd" value="${data ? (data['BCD'] || '') : ''}">
-                <input type="text" class="bank" value="${data ? (data['Bank'] || '') : ''}">
-                <input type="text" class="clearance" value="${data ? (data['Clear.'] || '') : ''}">
-                <input type="text" class="margin" value="${data ? (data['Margin'] || '') : ''}">
-                <input type="text" class="resale" value="${data ? (data['Resale'] || '') : ''}">
-                <input type="text" class="tp" value="${data ? (data['TP'] || '') : ''}">
-                <input type="text" class="remarks" value="${data ? (data['Remarks'] || '') : ''}">
-            `;
-            prContainer.appendChild(prRow);
-            
-            if (data && data['Source']) {
-                handleSourceChange(rowCount);
-            }
-            {% endif %}
-        }
-
-        function removeLinkedRow(id) {
-            const partRow = document.getElementById(`part-row-${id}`);
-            const priceRow = document.getElementById(`price-row-${id}`);
-            
-            const remainingParts = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
-            
-            if (remainingParts.length > 1) {
-                partRow.remove();
-                {% if role != 'sales' %}
-                priceRow.remove();
-                {% endif %}
-            } else {
-                alert("At least one part is required.");
-            }
-        }
-
-        async function saveRFQ() {
-            const purpose = document.getElementById('rfq_purpose').value;
-            const tentativeDate = document.getElementById('tentative_date').value;
-            
-            if (purpose === 'Bidding' && !tentativeDate) {
-                alert("Tentative Buying Date is required for Bidding purpose.");
-                return;
-            }
-            
-            const rfqData = {
-                id: currentRfqId,
-                rfq_no: document.getElementById('rfq_no').value,
-                company_name: document.getElementById('company_name').value,
-                sales_person: document.getElementById('sales_person').value,
-                customer_name: document.getElementById('customer_name').value,
-                customer_email: document.getElementById('customer_email').value,
-                customer_phone: document.getElementById('customer_phone').value,
-                customer_address_1: document.getElementById('customer_address_1').value,
-                customer_address_2: document.getElementById('customer_address_2').value,
-                customer_city: document.getElementById('customer_city').value,
-                customer_state: document.getElementById('customer_state').value,
-                customer_pincode: document.getElementById('customer_pincode').value,
-                customer_country: document.getElementById('customer_country').value,
-                rfq_purpose: purpose,
-                tentative_date: tentativeDate,
-                items: []
-            };
-
-            const partRows = document.querySelectorAll('.parts-row:not([style*="margin-bottom: 5px"])');
-            partRows.forEach((partRow) => {
-                const rowId = partRow.id.split('-')[2];
-                {% if role != 'sales' %}
-                const priceRow = document.getElementById(`price-row-${rowId}`);
-                const sourceSelect = document.getElementById(`source-${rowId}`);
-                {% endif %}
-                
-                const item = {
-                    rfq_part_no: partRow.querySelector('.rfq_part_no').value,
-                    {% if role != 'sales' %}quoted_part_no: partRow.querySelector('.quoted_part_no').value,
-                    supplier: partRow.querySelector('.supplier').value,{% else %}quoted_part_no: '',
-                    supplier: '',{% endif %}
-                    date_code: partRow.querySelector('.date_code').value,
-                    rfq_qty: parseInt(partRow.querySelector('.rfq_qty').value) || 0,
-                    quoted_qty: parseInt(partRow.querySelector('.quoted_qty').value) || 0,
-                    make: partRow.querySelector('.make').value,
-                    lead_time: partRow.querySelector('.lead_time').value,
-                    {% if role != 'sales' %}
-                    source: sourceSelect ? sourceSelect.value : '',
-                    unit_price_usd: parseFloat(priceRow.querySelector(`#usd-${rowId}`).value) || 0,
-                    unit_price_inr: parseFloat(priceRow.querySelector(`#inr-${rowId}`).value) || 0,
-                    freight: parseFloat(priceRow.querySelector('.freight').value) || 0,
-                    insurance: parseFloat(priceRow.querySelector('.insurance').value) || 0,
-                    bcd: parseFloat(priceRow.querySelector('.bcd').value) || 0,
-                    bank: parseFloat(priceRow.querySelector('.bank').value) || 0,
-                    clearance: parseFloat(priceRow.querySelector('.clearance').value) || 0,
-                    margin: parseFloat(priceRow.querySelector('.margin').value) || 0,
-                    resale: parseFloat(priceRow.querySelector('.resale').value) || 0,
-                    tp: priceRow.querySelector('.tp').value,
-                    remarks: priceRow.querySelector('.remarks').value
-                    {% else %}
-                    source: '',
-                    unit_price_usd: 0,
-                    unit_price_inr: 0,
-                    freight: 0,
-                    insurance: 0,
-                    bcd: 0,
-                    bank: 0,
-                    clearance: 0,
-                    margin: 0,
-                    resale: 0,
-                    tp: '',
-                    remarks: ''
-                    {% endif %}
-                };
-                rfqData.items.push(item);
-            });
-
-            try {
-                const response = await fetch('/api/make-rfq-entry', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(rfqData)
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert("Success! RFQ saved.");
-                    window.location.href = '/rfq-list';
-                } else {
-                    alert("Error: " + (result.error || "Failed to save RFQ"));
+            // Use global exchange rate if available, otherwise calculate from data or default to 92
+            let defaultExch = globalExchangeRate || "92";
+            if (data && data['Unit$'] && data['Unit₹']) {
+                const usd = parseFloat(data['Unit$']);
+                const inr = parseFloat(data['Unit₹']);
+                if (usd > 0 && inr > 0) {
+                    defaultExch = (inr / usd).toFixed(2);
                 }
-            } catch (err) {
-                console.error("Save Error:", err);
-                alert("Network error.");
             }
+
+            prRow.innerHTML = 
+                '<select id="source-' + rowCount + '" onchange="handleSourceChange(' + rowCount + ')">' +
+                    '<option value="">Source</option>' +
+                    '<option value="Import" ' + (data?.['Source'] === 'Import' ? 'selected' : '') + '>Import</option>' +
+                    '<option value="Local" ' + (data?.['Source'] === 'Local' ? 'selected' : '') + '>Local</option>' +
+                '</select>' +
+                '<input type="number" step="0.0001" id="usd-' + rowCount + '" value="' + (data?.['Unit$'] || '') + '" oninput="calculateINR(' + rowCount + ')">' +
+                '<input type="number" id="exch-' + rowCount + '" value="' + defaultExch + '" oninput="calculateINR(' + rowCount + ')">' +
+                '<input type="number" id="inr-' + rowCount + '" value="' + (data?.['Unit₹'] || '') + '">' +
+                '<input type="text" class="freight" value="' + (data?.['Freight'] ? data['Freight'].toFixed(2) : '') + '">' +
+                '<input type="text" class="insurance" readonly value="' + (data?.['Insurance'] ? data['Insurance'].toFixed(2) : '') + '">' +
+                '<input type="text" class="bcd" readonly value="' + (data?.['BCD'] ? data['BCD'].toFixed(2) : '') + '">' +
+                '<input type="text" class="bank" readonly value="' + (data?.['Bank'] ? data['Bank'].toFixed(2) : '') + '">' +
+                '<input type="text" class="clearance" readonly value="' + (data?.['Clearance'] ? data['Clearance'].toFixed(2) : '') + '">' +
+                '<input type="text" class="margin" readonly value="' + (data?.['Margin'] ? data['Margin'].toFixed(2) : '') + '">' +
+                '<input type="text" class="resale" readonly value="' + (data?.['Resale'] ? data['Resale'].toFixed(2) : '') + '">' +
+                '<input type="text" class="tp" value="' + (data?.['TP'] || '') + '">' +
+                '<input type="text" class="remarks" value="' + (data?.['Remarks'] || '') + '">' +
+                '<button type="button" class="btn-calculate" onclick="calculatePricing(' + rowCount + ')">Calc</button>';
+            prContainer.appendChild(prRow);
+            if (data?.Source) handleSourceChange(rowCount);
+        }
+    }
+
+    function removeLinkedRow(id) {
+        if (document.querySelectorAll('.parts-row').length > 2) { // 2 because of the header label row
+            document.getElementById(`part-row-${id}`).remove();
+            if (role !== 'sales') document.getElementById(`price-row-${id}`).remove();
+        } else {
+            alert("At least one part is required.");
+        }
+    }
+
+    // --- SAVE LOGIC ---
+
+    async function saveRFQ() {
+        const purpose = document.getElementById('rfq_purpose').value;
+        const tentativeDate = document.getElementById('tentative_date').value;
+        
+        if (purpose === 'Bidding' && !tentativeDate) {
+            alert("Tentative Buying Date is required for Bidding.");
+            return;
         }
 
-        function resetForm() {
-            if (confirm("Are you sure you want to reset the form? All unsaved data will be lost.")) {
-                document.getElementById('rfq_no').value = '';
-                document.getElementById('company_name').value = '';
-                document.getElementById('sales_person').value = '';
-                document.getElementById('customer_name').value = '';
-                document.getElementById('customer_email').value = '';
-                document.getElementById('customer_phone').value = '';
-                document.getElementById('customer_address_1').value = '';
-                document.getElementById('customer_address_2').value = '';
-                document.getElementById('customer_city').value = '';
-                document.getElementById('customer_state').value = '';
-                document.getElementById('customer_pincode').value = '';
-                document.getElementById('customer_country').value = '';
-                document.getElementById('rfq_purpose').value = '';
-                document.getElementById('tentative_date').value = '';
-                document.getElementById('rfq_date').valueAsDate = new Date();
-                document.getElementById('date_required').style.display = 'none';
-                
-                document.getElementById('partsContainer').innerHTML = `
-                    <div class="parts-row {% if role == 'sales' %}sales{% else %}admin{% endif %}" style="margin-bottom: 5px;">
-                        <label>RFQ Part #</label>
-                        {% if role != 'sales' %}<label>Quoted Part #</label><label>Supplier</label>{% endif %}
-                        <label>Date Code</label><label>RFQ Qty</label><label>Quoted Qty</label>
-                        <label>Make</label><label>Lead</label>
-                        <div></div>
-                    </div>
-                `;
-                {% if role != 'sales' %}
-                document.getElementById('pricingContainer').innerHTML = `
-                    <div class="pricing-row" style="margin-bottom: 5px;">
-                        <label>Source</label>
-                        <label>Unit $</label><label>Exch</label><label>Unit ₹</label>
-                        <label>Freight</label><label>Insur.</label><label>BCD</label>
-                        <label>Bank</label><label>Clear.</label><label>Margin</label>
-                        <label>Resale</label><label>TP</label><label>Remarks</label>
-                    </div>
-                `;
-                {% endif %}
-                
-                rowCount = 0;
-                addLinkedRow();
+        const rfqData = {
+            id: currentRfqId,
+            rfq_no: document.getElementById('rfq_no').value,
+            company_name: document.getElementById('company_name').value,
+            sales_person: document.getElementById('sales_person').value,
+            customer_name: document.getElementById('customer_name').value,
+            customer_email: document.getElementById('customer_email').value,
+            customer_phone: document.getElementById('customer_phone').value,
+            customer_address_1: document.getElementById('customer_address_1').value,
+            customer_address_2: document.getElementById('customer_address_2').value,
+            customer_city: document.getElementById('customer_city').value,
+            customer_state: document.getElementById('customer_state').value,
+            customer_pincode: document.getElementById('customer_pincode').value,
+            customer_country: document.getElementById('customer_country').value,
+            rfq_purpose: purpose,
+            tentative_date: tentativeDate,
+            exchange_rate: globalExchangeRate,
+            items: []
+        };
+
+        document.querySelectorAll('.parts-row[id^="part-row"]').forEach(pRow => {
+            const id = pRow.id.split('-')[2];
+            const prRow = document.getElementById(`price-row-${id}`);
+            
+            rfqData.items.push({
+                rfq_part_no: pRow.querySelector('.rfq_part_no').value,
+                quoted_part_no: role !== 'sales' ? pRow.querySelector('.quoted_part_no').value : '',
+                supplier: role !== 'sales' ? pRow.querySelector('.supplier').value : '',
+                date_code: pRow.querySelector('.date_code').value,
+                rfq_qty: parseInt(pRow.querySelector('.rfq_qty').value) || 0,
+                quoted_qty: parseInt(pRow.querySelector('.quoted_qty').value) || 0,
+                make: pRow.querySelector('.make').value,
+                lead_time: pRow.querySelector('.lead_time').value,
+                source: prRow ? prRow.querySelector('select').value : '',
+                unit_price_usd: prRow ? parseFloat(document.getElementById(`usd-${id}`).value) : 0,
+                unit_price_inr: prRow ? parseFloat(document.getElementById(`inr-${id}`).value) : 0,
+                freight: prRow ? parseFloat(prRow.querySelector('.freight').value) : 0,
+                insurance: prRow ? parseFloat(prRow.querySelector('.insurance').value) : 0,
+                bcd: prRow ? parseFloat(prRow.querySelector('.bcd').value) : 0,
+                bank: prRow ? parseFloat(prRow.querySelector('.bank').value) : 0,
+                clearance: prRow ? parseFloat(prRow.querySelector('.clearance').value) : 0,
+                margin: prRow ? parseFloat(prRow.querySelector('.margin').value) : 0,
+                resale: prRow ? parseFloat(prRow.querySelector('.resale').value) : 0,
+                tp: prRow ? prRow.querySelector('.tp').value : '',
+                remarks: prRow ? prRow.querySelector('.remarks').value : ''
+            });
+        });
+
+        try {
+            const res = await fetch('/api/make-rfq-entry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(rfqData)
+            });
+            if (res.ok) {
+                alert("RFQ Saved Successfully!");
+                window.location.href = '/rfq-list';
+            } else {
+                const err = await res.json();
+                alert("Error: " + err.error);
             }
-        }
-    console.log({"role" : role});
-    </script>
+        } catch (e) { alert("Network Error"); }
+    }
+</script>
 
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };

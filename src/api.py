@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, make_response, request, jsonify
 from src.auth.utils import login_required
 from src.SupaClient import get_supabase, get_supabase_admin
 import requests
@@ -11,6 +11,33 @@ def get_user_info(user):
     role = getattr(user, 'role', user.get('role') if isinstance(user, dict) else 'user')
     u_id = getattr(user, 'id', user.get('id') if isinstance(user, dict) else None)
     return role, u_id
+
+@api.route('/get-usd-inr', methods=['GET'])
+def get_usd_inr():
+    try:
+        api_key = Config.EXCHANGE_RATE_API_KEY 
+        url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/USD"
+        
+        # 2. Fetch data (Only runs on cache miss)
+        res = requests.get(url)
+        res.raise_for_status()
+        data = res.json()
+
+        inr_rate = data.get("conversion_rates", {}).get("INR")
+
+        response = make_response(jsonify({
+            "success": True,
+            "pair": "USD/INR",
+            "rate": inr_rate,
+            "updated": data.get("time_last_update_utc")
+        }))
+
+        # 4. Cache globally on Vercel for 24 hours
+        response.headers['Cache-Control'] = 'public, s-maxage=86400, stale-while-revalidate'
+        
+        return response, 200
+    except Exception as e:
+        return jsonify({"error": "Could not fetch rate", "details": str(e)}), 500
 
 # --- RFQ ROUTES ---
 
@@ -38,6 +65,7 @@ def make_entry(user):
             "Customer_country": data.get('customer_country'),
             "RFQ_purpose": data.get('rfq_purpose'),
             "Tentative_date": data.get('tentative_date') or None,
+            "Exchange_rate": data.get('exchange_rate'),
             "created_by": u_id
         }
         
@@ -87,7 +115,6 @@ def list_entry(user):
     supabase = get_supabase()
     role, u_id = get_user_info(user)
     try:
-        # Everyone sees all rows for visibility
         res = supabase.table("RFQ-Tracker").select('*, Part_details(*)').order("created_at", desc=True).execute()
         processed_data = res.data
         
