@@ -7,7 +7,7 @@ from src.utils import resource_path
 from src.config import Config
 from src.auth.utils import login_required, get_current_user, role_required
 from src.SupaClient import get_supabase
-from api import api
+from src.api import api
 from flaskwebgui import FlaskUI
 
 app = Flask(__name__, template_folder=resource_path('templates'), static_folder=resource_path('static'))
