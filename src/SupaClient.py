@@ -1,25 +1,30 @@
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import sys 
 
-load_dotenv()
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
-# Try to get service role key, fallback to regular key if not set
-service_role_key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or key
+# Load the .env from the bundle's internal path
+load_dotenv(resource_path(".env"))
 
-# Warn if service role key is not set or is the same as regular key
-# if not os.environ.get("SUPABASE_SERVICE_ROLE_KEY"):
-#     print("WARNING: SUPABASE_SERVICE_ROLE_KEY not set. Using regular key for admin operations.")
-#     print("This may cause role update failures. Please set SUPABASE_SERVICE_ROLE_KEY in your .env file.")
-# elif service_role_key == key:
-#     print("WARNING: SUPABASE_SERVICE_ROLE_KEY is the same as SUPABASE_KEY.")
-#     print("Please use the service_role key (secret) from Supabase dashboard for admin operations.")
+# Now these will work inside the EXE
+url = os.environ.get("SUPABASE_URL")
+key = os.environ.get("SUPABASE_KEY")
+
+if not url or not key:
+    raise ValueError(f"Supabase credentials missing. Looked in: {resource_path('.env')}")
+
 
 supabase: Client = create_client(url, key)
-# Admin client with service role key for admin operations
-supabase_admin: Client = create_client(url, service_role_key)
+supabase_admin: Client = create_client(url, key)
 
 def get_supabase() -> Client:
     return supabase

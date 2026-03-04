@@ -1,7 +1,9 @@
 import os
+import sys
 from dotenv import load_dotenv
+from src.utils import resource_path
 
-load_dotenv()
+load_dotenv(resource_path('.env'))
 
 class Config:
     SUPABASE_URL = os.getenv("SUPABASE_URL")

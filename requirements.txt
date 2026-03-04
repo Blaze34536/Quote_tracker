@@ -1,7 +1,6 @@
 flask
 flask_wtf
 requests
-beautifulsoup4
-pandas
 python-dotenv
 supabase
+flaskwebgui

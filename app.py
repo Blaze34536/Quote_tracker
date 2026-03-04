@@ -1,11 +1,16 @@
+import os
+import sys
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from flask_wtf.csrf import CSRFProtect
+
+from src.utils import resource_path
 from src.config import Config
 from src.auth.utils import login_required, get_current_user, role_required
 from src.SupaClient import get_supabase
-from src.api import api
+from api import api
+from flaskwebgui import FlaskUI
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=resource_path('templates'), static_folder=resource_path('static'))
 app.config.from_object(Config)
 csrf = CSRFProtect(app)
 app.register_blueprint(api)
@@ -69,4 +74,4 @@ def rfq_list(user):
     return render_template("rfqList.html", user=user, role=role, user_name=user_name)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    FlaskUI(app=app, server="flask", width=800, height=600).run()

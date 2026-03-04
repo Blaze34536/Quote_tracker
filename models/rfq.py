@@ -1,8 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import date
-from uuid import UUID
+##only used as refrence for how database should look
 
+
+"""
 class parts_details(BaseModel):
     id: Optional[UUID] = None
     rfq_id: Optional[UUID] = None 
@@ -32,3 +31,4 @@ class RFQ_Tracker(BaseModel):
 
     class Config:
         from_attributes = True
+"""
